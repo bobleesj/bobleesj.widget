@@ -38,7 +38,7 @@ jobs:
 
       - name: Test imports
         run: |
-          python -c "from bobleesj.widget import Show2D, Show3D, Show4DSTEM; print('All imports OK')"
+          python -c "from bobleesj.widget import Show2D, Show3D, Colormap; print('All imports OK')"
 
       - name: Run pytest
         run: pytest tests/ -v --tb=short

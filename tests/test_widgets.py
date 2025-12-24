@@ -10,8 +10,15 @@ Tests cover:
 import numpy as np
 import pytest
 
-from bobleesj.widget import Show2D, Show3D, Show4DSTEM
+from bobleesj.widget import Show2D, Show3D
 from bobleesj.widget.array_utils import to_numpy, get_array_backend
+
+# Try to import Show4DSTEM (requires bobleesj.detector)
+try:
+    from bobleesj.widget import Show4DSTEM
+    HAS_SHOW4DSTEM = True
+except ImportError:
+    HAS_SHOW4DSTEM = False
 
 
 # =============================================================================
@@ -193,6 +200,7 @@ class TestShow3D:
 # Show4DSTEM Tests
 # =============================================================================
 
+@pytest.mark.skipif(not HAS_SHOW4DSTEM, reason="bobleesj.detector not installed")
 class TestShow4DSTEM:
     """Tests for Show4DSTEM widget."""
     
@@ -311,6 +319,7 @@ class TestCuPyBackend:
         
         assert widget.n_slices == 10
     
+    @pytest.mark.skipif(not HAS_SHOW4DSTEM, reason="bobleesj.detector not installed")
     def test_show4dstem_cupy(self):
         import cupy as cp
         data = cp.random.rand(16, 16, 32, 32).astype(cp.float32)
@@ -346,6 +355,7 @@ class TestPyTorchBackend:
         
         assert widget.n_slices == 10
     
+    @pytest.mark.skipif(not HAS_SHOW4DSTEM, reason="bobleesj.detector not installed")
     def test_show4dstem_torch(self):
         import torch
         data = torch.rand(16, 16, 32, 32)
