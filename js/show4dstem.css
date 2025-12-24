@@ -1,0 +1,83 @@
+/* Dark theme for Show4D widget */
+.show4dstem-root {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  color: #e0e0e0;
+  background-color: #1a1a1a;
+}
+
+/* Force dark background in Jupyter - targeted to container only */
+.jp-RenderedHTMLCommon .show4dstem-root,
+.widget-view .show4dstem-root,
+.jupyter-widgets.lm-Widget .show4dstem-root,
+.jp-OutputArea .show4dstem-root,
+.jp-Cell-outputWrapper .show4dstem-root {
+  background-color: #1a1a1a !important;
+}
+
+/* MUI overrides for dark theme */
+.show4dstem-root .MuiPaper-root {
+  background-color: #252525 !important;
+}
+
+.show4dstem-root .MuiSlider-root {
+  color: #4fc3f7;
+}
+
+.show4dstem-root .MuiTypography-root {
+  color: #e0e0e0;
+}
+
+.show4dstem-root .MuiSwitch-track {
+  background-color: #555;
+}
+
+.show4dstem-root .MuiSwitch-switchBase.Mui-checked+.MuiSwitch-track {
+  background-color: #4fc3f7;
+}
+
+/* Canvas containers */
+.show4d-canvas-container {
+  position: relative;
+  border: 1px solid #333;
+  background-color: #000;
+  overflow: hidden;
+}
+
+/* Colorbar styling */
+.show4d-colorbar {
+  width: 30px;
+  background: linear-gradient(to top, #000, #440154, #443983, #31688e, #21918c, #35b779, #90d743, #fde725);
+  border: 1px solid #333;
+}
+
+/* Histogram styling */
+.show4d-histogram {
+  width: 40px;
+  background-color: #1a1a2e;
+  border: 1px solid #333;
+}
+
+/* Labels */
+.show4d-label {
+  font-size: 11px;
+  color: #aaa;
+  text-align: center;
+  padding: 4px;
+}
+
+/* Scale bar */
+.show4d-scalebar {
+  position: absolute;
+  bottom: 8px;
+  right: 8px;
+  height: 3px;
+  background: white;
+}
+
+.show4d-scalebar-text {
+  position: absolute;
+  bottom: 14px;
+  right: 8px;
+  font-size: 10px;
+  color: white;
+}

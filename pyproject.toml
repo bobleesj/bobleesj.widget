@@ -1,0 +1,44 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "bobleesj-widget"
+version = "0.1.0"
+description = "Interactive Jupyter widgets for 4D-STEM visualization"
+readme = "README.md"
+license = "MIT"
+requires-python = ">=3.11"
+keywords = ["jupyter", "widget", "anywidget", "visualization", "4dstem"]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Framework :: Jupyter",
+]
+dependencies = ["anywidget", "ipywidgets"]
+
+[project.optional-dependencies]
+dev = ["watchfiles", "jupyterlab", "pytest"]
+test = ["pytest"]
+
+[dependency-groups]
+dev = ["watchfiles", "jupyterlab", "pytest"]
+
+[tool.hatch.build]
+only-packages = true
+artifacts = ["src/bobleesj/widget/static/*"]
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/bobleesj"]
+
+[tool.hatch.build.hooks.jupyter-builder]
+build-function = "hatch_jupyter_builder.npm_builder"
+ensured-targets = ["src/bobleesj/widget/static/widget.js"]
+skip-if-exists = ["src/bobleesj/widget/static/widget.js"]
+dependencies = ["hatch-jupyter-builder>=0.5.0"]
+
+[tool.hatch.build.hooks.jupyter-builder.build-kwargs]
+npm = "npm"
+build_cmd = "build"

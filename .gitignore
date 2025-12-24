@@ -1,0 +1,25 @@
+node_modules
+.venv
+dist
+.DS_Store
+
+# Python
+__pycache__
+.ipynb_checkpoints
+*.egg-info
+
+# Build artifacts
+src/bobleesj/widget/static
+
+# IDE/Editor
+.vscode
+.idea
+
+# AI Assistant directories (not for version control)
+.claude
+.agent
+
+# Notebooks - only track show2d tutorials
+notebooks/*
+!notebooks/show2d_single.ipynb
+!notebooks/show2d_multiple.ipynb
