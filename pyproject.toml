@@ -17,11 +17,11 @@ classifiers = [
     "Programming Language :: Python :: 3.13",
     "Framework :: Jupyter",
 ]
-dependencies = ["anywidget", "ipywidgets"]
+dependencies = ["anywidget", "ipywidgets", "numpy", "traitlets"]
 
 [project.optional-dependencies]
 dev = ["watchfiles", "jupyterlab", "pytest"]
-test = ["pytest"]
+test = ["pytest", "numpy"]
 
 [dependency-groups]
 dev = ["watchfiles", "jupyterlab", "pytest"]

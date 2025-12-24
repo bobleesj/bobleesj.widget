@@ -397,7 +397,6 @@ function Show2D() {
   // -------------------------------------------------------------------------
   React.useEffect(() => {
     if (!showHistogram || !histCanvasRef.current) return;
-    if (!histogramCounts || histogramCounts.length === 0) return;
 
     const canvas = histCanvasRef.current;
     const ctx = canvas.getContext("2d");
@@ -405,8 +404,13 @@ function Show2D() {
 
     const w = panelSize;
     const h = panelSize;
+    
+    // Always clear and fill background
     ctx.fillStyle = colors.bgPanel;
     ctx.fillRect(0, 0, w, h);
+
+    // Only draw bars if we have data
+    if (!histogramCounts || histogramCounts.length === 0) return;
 
     const maxCount = Math.max(...histogramCounts);
     if (maxCount === 0) return;
@@ -417,7 +421,7 @@ function Show2D() {
       const barHeight = (histogramCounts[i] / maxCount) * (h - 10);
       ctx.fillRect(i * barWidth, h - barHeight, barWidth - 1, barHeight);
     }
-  }, [showHistogram, histogramCounts, panelSize]);
+  }, [showHistogram, histogramCounts, panelSize, selectedIdx, dataReady]);
 
   // -------------------------------------------------------------------------
   // Mouse Handlers for Zoom/Pan

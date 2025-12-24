@@ -286,8 +286,8 @@ class Show2D(anywidget.AnyWidget):
         """Compute histogram of selected image."""
         img = self._data[self.selected_idx]
         counts, bins = np.histogram(img.ravel(), bins=50)
-        self.histogram_bins = bins[:-1].tolist()
-        self.histogram_counts = counts.tolist()
+        self.histogram_bins = [float(b) for b in bins[:-1]]
+        self.histogram_counts = [int(c) for c in counts]
 
     def _on_options_change(self, change):
         """Recompute frames when display options change."""
