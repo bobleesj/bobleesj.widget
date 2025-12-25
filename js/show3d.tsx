@@ -82,6 +82,9 @@ function Show3D() {
   // Scale bar
   const [pixelSize] = useModelState<number>("pixel_size");
   const [scaleBarVisible] = useModelState<boolean>("scale_bar_visible");
+  const [scaleBarLengthPx] = useModelState<number>("scale_bar_length_px");
+  const [scaleBarThicknessPx] = useModelState<number>("scale_bar_thickness_px");
+  const [scaleBarFontSizePx] = useModelState<number>("scale_bar_font_size_px");
 
   // Timestamps
   const [timestamps] = useModelState<number[]>("timestamps");
@@ -264,9 +267,10 @@ function Show3D() {
 
     ctx.clearRect(0, 0, canvasW, canvasH);
 
-    // Scale bar
+    // Scale bar (pixel_size is in nm, convert to Angstroms for drawScaleBar)
     if (pixelSize > 0 && scaleBarVisible) {
-      drawScaleBar(ctx, canvasW, canvasH, width, pixelSize, displayScale * zoom);
+      const pixelSizeAngstrom = pixelSize * 10; // nm -> Angstroms
+      drawScaleBar(ctx, canvasW, canvasH, width, pixelSizeAngstrom, displayScale * zoom, scaleBarLengthPx, scaleBarThicknessPx, scaleBarFontSizePx);
     }
 
     // Zoom indicator
@@ -284,7 +288,7 @@ function Show3D() {
       const screenRadius = roiRadius * displayScale * zoom;
       drawROICircle(ctx, screenX, screenY, screenRadius, isDraggingROI);
     }
-  }, [pixelSize, scaleBarVisible, roiActive, roiX, roiY, roiRadius, isDraggingROI, width, canvasW, canvasH, displayScale, zoom, panX, panY]);
+  }, [pixelSize, scaleBarVisible, scaleBarLengthPx, scaleBarThicknessPx, scaleBarFontSizePx, roiActive, roiX, roiY, roiRadius, isDraggingROI, width, canvasW, canvasH, displayScale, zoom, panX, panY]);
 
   // -------------------------------------------------------------------------
   // Render FFT with WebGPU and zoom/pan

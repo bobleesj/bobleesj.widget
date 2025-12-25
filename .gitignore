@@ -20,8 +20,9 @@ src/bobleesj/widget/static
 .agent
 Claude.md
 
-# Notebooks - only track show2d tutorials
+# Notebooks - only track tutorials
 notebooks/*
 !notebooks/show2d_single.ipynb
 !notebooks/show2d_single_sizes.ipynb
 !notebooks/show2d_multiple.ipynb
+!notebooks/show3d.ipynb

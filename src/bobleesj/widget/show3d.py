@@ -118,6 +118,9 @@ class Show3D(anywidget.AnyWidget):
     # =========================================================================
     pixel_size = traitlets.Float(0.0).tag(sync=True)  # nm/pixel, 0 = no scale bar
     scale_bar_visible = traitlets.Bool(True).tag(sync=True)
+    scale_bar_length_px = traitlets.Int(50).tag(sync=True)
+    scale_bar_thickness_px = traitlets.Int(4).tag(sync=True)
+    scale_bar_font_size_px = traitlets.Int(16).tag(sync=True)
 
     # =========================================================================
     # Timestamps / Dose
@@ -171,6 +174,10 @@ class Show3D(anywidget.AnyWidget):
         vmin=None,
         vmax=None,
         pixel_size=0.0,
+        scale_bar_visible=True,
+        scale_bar_length_px=50,
+        scale_bar_thickness_px=4,
+        scale_bar_font_size_px=16,
         log_scale=False,
         auto_contrast=False,
         percentile_low=1.0,
@@ -215,6 +222,10 @@ class Show3D(anywidget.AnyWidget):
 
         # Display options
         self.pixel_size = pixel_size
+        self.scale_bar_visible = scale_bar_visible
+        self.scale_bar_length_px = scale_bar_length_px
+        self.scale_bar_thickness_px = scale_bar_thickness_px
+        self.scale_bar_font_size_px = scale_bar_font_size_px
         self.log_scale = log_scale
         self.auto_contrast = auto_contrast
         self.percentile_low = percentile_low
