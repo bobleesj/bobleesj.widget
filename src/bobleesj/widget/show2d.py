@@ -107,11 +107,13 @@ class Show2D(anywidget.AnyWidget):
     # Sizing & Customization
     # =========================================================================
     fft_panel_size_px = traitlets.Int(150).tag(sync=True)
+    histogram_panel_size_px = traitlets.Int(150).tag(sync=True)
     image_width_px = traitlets.Int(0).tag(sync=True)  # If 0, use frontend defaults
 
     # =========================================================================
-    # Statistics
+    # UI Visibility
     # =========================================================================
+    show_controls = traitlets.Bool(True).tag(sync=True)
     show_stats = traitlets.Bool(True).tag(sync=True)
     stats_mean = traitlets.List(traitlets.Float()).tag(sync=True)
     stats_min = traitlets.List(traitlets.Float()).tag(sync=True)
@@ -146,6 +148,7 @@ class Show2D(anywidget.AnyWidget):
         scale_bar_visible: bool = True,
         show_fft: bool = False,
         show_histogram: bool = False,
+        show_controls: bool = True,
         show_stats: bool = True,
         log_scale: bool = False,
         auto_contrast: bool = False,
@@ -154,6 +157,7 @@ class Show2D(anywidget.AnyWidget):
         scale_bar_thickness_px: int = 4,
         scale_bar_font_size_px: int = 16,
         fft_panel_size_px: int = 150,
+        histogram_panel_size_px: int = 150,
         image_width_px: int = 0,
         **kwargs,
     ):
@@ -189,9 +193,11 @@ class Show2D(anywidget.AnyWidget):
         self.scale_bar_thickness_px = scale_bar_thickness_px
         self.scale_bar_font_size_px = scale_bar_font_size_px
         self.fft_panel_size_px = fft_panel_size_px
+        self.histogram_panel_size_px = histogram_panel_size_px
         self.image_width_px = image_width_px
         self.show_fft = show_fft
         self.show_histogram = show_histogram
+        self.show_controls = show_controls
         self.show_stats = show_stats
         self.log_scale = log_scale
         self.auto_contrast = auto_contrast

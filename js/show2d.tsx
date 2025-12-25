@@ -68,13 +68,15 @@ function Show2D() {
   const [scaleBarThicknessPx] = useModelState<number>("scale_bar_thickness_px");
   const [scaleBarFontSizePx] = useModelState<number>("scale_bar_font_size_px");
   const [fftPanelSizePx] = useModelState<number>("fft_panel_size_px");
+  const [histogramPanelSizePx] = useModelState<number>("histogram_panel_size_px");
   const [imageWidthPx] = useModelState<number>("image_width_px");
 
   // Scale bar
   const [pixelSizeAngstrom] = useModelState<number>("pixel_size_angstrom");
   const [scaleBarVisible] = useModelState<boolean>("scale_bar_visible");
 
-  // Stats
+  // UI visibility
+  const [showControls] = useModelState<boolean>("show_controls");
   const [showStats] = useModelState<boolean>("show_stats");
   const [statsMean] = useModelState<number[]>("stats_mean");
   const [statsMin] = useModelState<number[]>("stats_min");
@@ -128,6 +130,7 @@ function Show2D() {
   // Resizable state
   const [canvasSize, setCanvasSize] = React.useState(SINGLE_IMAGE_TARGET);
   const [panelSize, setPanelSize] = React.useState(PANEL_SIZE);
+  const [histPanelSize, setHistPanelSize] = React.useState(PANEL_SIZE);
 
   // Sync initial sizes from traits
   React.useEffect(() => {
@@ -137,8 +140,13 @@ function Show2D() {
   React.useEffect(() => {
     if (fftPanelSizePx > 0) setPanelSize(fftPanelSizePx);
   }, [fftPanelSizePx]);
+
+  React.useEffect(() => {
+    if (histogramPanelSizePx > 0) setHistPanelSize(histogramPanelSizePx);
+  }, [histogramPanelSizePx]);
   const [isResizingCanvas, setIsResizingCanvas] = React.useState(false);
   const [isResizingPanel, setIsResizingPanel] = React.useState(false);
+  const [isResizingHistPanel, setIsResizingHistPanel] = React.useState(false);
   const [resizeStart, setResizeStart] = React.useState<{ x: number, y: number, size: number } | null>(null);
 
   // WebGPU FFT
@@ -402,8 +410,8 @@ function Show2D() {
     const ctx = canvas.getContext("2d");
     if (!ctx) return;
 
-    const w = panelSize;
-    const h = panelSize;
+    const w = histPanelSize;
+    const h = histPanelSize;
     
     // Always clear and fill background
     ctx.fillStyle = colors.bgPanel;
@@ -421,7 +429,7 @@ function Show2D() {
       const barHeight = (histogramCounts[i] / maxCount) * (h - 10);
       ctx.fillRect(i * barWidth, h - barHeight, barWidth - 1, barHeight);
     }
-  }, [showHistogram, histogramCounts, panelSize, selectedIdx, dataReady]);
+  }, [showHistogram, histogramCounts, histPanelSize, selectedIdx, dataReady]);
 
   // -------------------------------------------------------------------------
   // Mouse Handlers for Zoom/Pan
@@ -544,8 +552,15 @@ function Show2D() {
     setResizeStart({ x: e.clientX, y: e.clientY, size: panelSize });
   };
 
+  const handleHistPanelResizeStart = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    e.preventDefault();
+    setIsResizingHistPanel(true);
+    setResizeStart({ x: e.clientX, y: e.clientY, size: histPanelSize });
+  };
+
   React.useEffect(() => {
-    if (!isResizingCanvas && !isResizingPanel) return;
+    if (!isResizingCanvas && !isResizingPanel && !isResizingHistPanel) return;
 
     const handleMouseMove = (e: MouseEvent) => {
       if (!resizeStart) return;
@@ -557,12 +572,16 @@ function Show2D() {
       } else if (isResizingPanel) {
         const newSize = Math.max(80, Math.min(250, resizeStart.size + delta));
         setPanelSize(newSize);
+      } else if (isResizingHistPanel) {
+        const newSize = Math.max(80, Math.min(250, resizeStart.size + delta));
+        setHistPanelSize(newSize);
       }
     };
 
     const handleMouseUp = () => {
       setIsResizingCanvas(false);
       setIsResizingPanel(false);
+      setIsResizingHistPanel(false);
       setResizeStart(null);
     };
 
@@ -572,13 +591,13 @@ function Show2D() {
       document.removeEventListener("mousemove", handleMouseMove);
       document.removeEventListener("mouseup", handleMouseUp);
     };
-  }, [isResizingCanvas, isResizingPanel, resizeStart]);
+  }, [isResizingCanvas, isResizingPanel, isResizingHistPanel, resizeStart]);
 
   // -------------------------------------------------------------------------
   // Render
   // -------------------------------------------------------------------------
   return (
-    <Box className="show2d-root" sx={{ p: 1.5, bgcolor: colors.bg, borderRadius: 1 }}>
+    <Box className="show2d-root" sx={{ p: 1.5, bgcolor: colors.bg, borderRadius: 1, width: "fit-content" }}>
       {/* Title */}
       {title && (
         <Typography sx={{ color: colors.accent, fontWeight: "bold", mb: 1, fontSize: 13 }}>
@@ -740,11 +759,21 @@ function Show2D() {
               </Box>
             )}
             {showHistogram && (
-              <Box sx={{ bgcolor: colors.bgPanel, border: "1px solid " + colors.border, borderRadius: 0.5, p: 0.75 }}>
+              <Box sx={{ bgcolor: colors.bgPanel, border: "1px solid " + colors.border, borderRadius: 0.5, p: 0.75, position: "relative" }}>
                 <Typography sx={{ fontSize: 10, color: colors.textMuted, textTransform: "uppercase", mb: 0.5 }}>
                   Histogram {isGallery && "(" + (labels?.[selectedIdx] || "#" + (selectedIdx + 1)) + ")"}
                 </Typography>
-                <canvas ref={histCanvasRef} width={panelSize} height={panelSize} />
+                <canvas ref={histCanvasRef} width={histPanelSize} height={histPanelSize} />
+                {/* Histogram panel resize handle */}
+                <Box
+                  onMouseDown={handleHistPanelResizeStart}
+                  sx={{
+                    position: "absolute", bottom: 2, right: 2, width: 10, height: 10,
+                    cursor: "nwse-resize", opacity: 0.4,
+                    background: "linear-gradient(135deg, transparent 50%, " + colors.textMuted + " 50%)",
+                    "&:hover": { opacity: 1 }
+                  }}
+                />
               </Box>
             )}
           </Stack>
@@ -752,56 +781,58 @@ function Show2D() {
       </Stack>
 
       {/* Options row */}
-      <Stack direction="row" spacing={2} sx={{ mt: 1, flexWrap: "wrap" }} alignItems="center">
-        {[
-          { label: "Log", checked: logScale, onChange: () => setLogScale(!logScale) },
-          { label: "Auto", checked: autoContrast, onChange: () => setAutoContrast(!autoContrast) },
-          { label: "FFT", checked: showFft, onChange: () => setShowFft(!showFft) },
-          { label: "Hist", checked: showHistogram, onChange: () => setShowHistogram(!showHistogram) },
-        ].map(({ label, checked, onChange }) => (
-          <Stack key={label} direction="row" alignItems="center" spacing={0.5}>
-            <Switch size="small" checked={checked} onChange={onChange} sx={{ "& .MuiSwitch-thumb": { width: 12, height: 12 }, "& .MuiSwitch-track": { height: 14 } }} />
-            <Typography sx={{ fontSize: 11, color: colors.textMuted }}>{label}</Typography>
-          </Stack>
-        ))}
-        <Select
-          size="small"
-          value={cmap}
-          onChange={(e) => setCmap(e.target.value)}
-          MenuProps={upwardMenuProps}
-          sx={{ minWidth: 80, bgcolor: colors.bgInput, color: colors.textPrimary, fontSize: 11, "& .MuiSelect-select": { py: 0.5 } }}
-        >
-          {COLORMAP_NAMES.map((name) => (
-            <MenuItem key={name} value={name} sx={{ fontSize: 11 }}>
-              {name}
-            </MenuItem>
+      {showControls && (
+        <Stack direction="row" spacing={2} sx={{ mt: 1, flexWrap: "wrap" }} alignItems="center">
+          {[
+            { label: "Log", checked: logScale, onChange: () => setLogScale(!logScale) },
+            { label: "Auto", checked: autoContrast, onChange: () => setAutoContrast(!autoContrast) },
+            { label: "FFT", checked: showFft, onChange: () => setShowFft(!showFft) },
+            { label: "Hist", checked: showHistogram, onChange: () => setShowHistogram(!showHistogram) },
+          ].map(({ label, checked, onChange }) => (
+            <Stack key={label} direction="row" alignItems="center" spacing={0.5}>
+              <Switch size="small" checked={checked} onChange={onChange} sx={{ "& .MuiSwitch-thumb": { width: 12, height: 12 }, "& .MuiSwitch-track": { height: 14 } }} />
+              <Typography sx={{ fontSize: 11, color: colors.textMuted }}>{label}</Typography>
+            </Stack>
           ))}
-        </Select>
-        {isGallery && (
-          <Stack direction="row" alignItems="center" spacing={0.5}>
-            <Switch size="small" checked={linkedZoom} onChange={() => setLinkedZoom(!linkedZoom)} sx={{ '& .MuiSwitch-thumb': { width: 12, height: 12 }, '& .MuiSwitch-switchBase': { padding: '4px' } }} />
-            <Typography sx={{ fontSize: 11, color: colors.textMuted }}>Link Zoom</Typography>
-          </Stack>
-        )}
-        <Box
-          onClick={handleResetAll}
-          sx={{ px: 1, py: 0.25, bgcolor: colors.bgPanel, border: "1px solid " + colors.border, borderRadius: 0.5, cursor: "pointer", "&:hover": { bgcolor: colors.bgInput } }}
-        >
-          <Typography sx={{ fontSize: 11, color: colors.textMuted }}>Reset</Typography>
-        </Box>
-        {getZoomState(selectedIdx).zoom !== 1 && (
-          <Typography sx={{ fontSize: 11, color: colors.accent, fontWeight: "bold" }}>
-            Zoom: {getZoomState(selectedIdx).zoom.toFixed(1)}×
-          </Typography>
-        )}
-      </Stack>
+          <Select
+            size="small"
+            value={cmap}
+            onChange={(e) => setCmap(e.target.value)}
+            MenuProps={upwardMenuProps}
+            sx={{ minWidth: 80, bgcolor: colors.bgInput, color: colors.textPrimary, fontSize: 11, "& .MuiSelect-select": { py: 0.5 } }}
+          >
+            {COLORMAP_NAMES.map((name) => (
+              <MenuItem key={name} value={name} sx={{ fontSize: 11 }}>
+                {name}
+              </MenuItem>
+            ))}
+          </Select>
+          {isGallery && (
+            <Stack direction="row" alignItems="center" spacing={0.5}>
+              <Switch size="small" checked={linkedZoom} onChange={() => setLinkedZoom(!linkedZoom)} sx={{ '& .MuiSwitch-thumb': { width: 12, height: 12 }, '& .MuiSwitch-switchBase': { padding: '4px' } }} />
+              <Typography sx={{ fontSize: 11, color: colors.textMuted }}>Link Zoom</Typography>
+            </Stack>
+          )}
+          <Box
+            onClick={handleResetAll}
+            sx={{ px: 1, py: 0.25, bgcolor: colors.bgPanel, border: "1px solid " + colors.border, borderRadius: 0.5, cursor: "pointer", "&:hover": { bgcolor: colors.bgInput } }}
+          >
+            <Typography sx={{ fontSize: 11, color: colors.textMuted }}>Reset</Typography>
+          </Box>
+          {getZoomState(selectedIdx).zoom !== 1 && (
+            <Typography sx={{ fontSize: 11, color: colors.accent, fontWeight: "bold" }}>
+              Zoom: {getZoomState(selectedIdx).zoom.toFixed(1)}×
+            </Typography>
+          )}
+        </Stack>
+      )}
 
       {/* Stats */}
       {showStats && (
-        <Box sx={{ mt: 1, bgcolor: colors.bgPanel, px: 1.5, py: 0.75, borderRadius: 0.5, border: "1px solid " + colors.border }}>
+        <Box sx={{ mt: 1, bgcolor: colors.bgPanel, px: 1.5, py: 0.75, borderRadius: 0.5, border: "1px solid " + colors.border, width: "fit-content", maxWidth: "100%" }}>
           {isGallery ? (
             // Gallery: show stats for selected image
-            <Stack direction="row" spacing={2}>
+            <Stack direction="row" spacing={2} flexWrap="wrap">
               <Typography sx={{ fontSize: 10, color: colors.textMuted }}>
                 {labels?.[selectedIdx] || "Image " + (selectedIdx + 1)}:
               </Typography>
@@ -821,7 +852,7 @@ function Show2D() {
             </Stack>
           ) : (
             // Single: show stats
-            <Stack direction="row" spacing={2}>
+            <Stack direction="row" spacing={2} flexWrap="wrap">
               {[
                 { label: "Mean", value: statsMean?.[0] },
                 { label: "Min", value: statsMin?.[0] },
