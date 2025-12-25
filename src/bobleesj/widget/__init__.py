@@ -13,6 +13,9 @@ except importlib.metadata.PackageNotFoundError:
 from bobleesj.widget.show2d import Show2D, Colormap
 from bobleesj.widget.show3d import Show3D
 
+# Synthetic data generators for demos/testing
+from bobleesj.widget import synthetic
+
 # Lazy imports for widgets with external dependencies (bobleesj.detector, etc.)
 def __getattr__(name):
     if name == "Show4DSTEM" or name == "Show4D":
@@ -44,4 +47,4 @@ def __getattr__(name):
             ) from e
     raise AttributeError(f"module {__name__!r} has no attribute {name!r}")
 
-__all__ = ["Show2D", "Colormap", "Show3D", "Show4D", "Show4DSTEM", "Show5DSTEM", "Reconstruct"]
+__all__ = ["Show2D", "Colormap", "Show3D", "Show4D", "Show4DSTEM", "Show5DSTEM", "Reconstruct", "synthetic"]
