@@ -121,8 +121,7 @@ class TestShow2D:
             cmap=Colormap.VIRIDIS,  # Enum usage
             pixel_size_angstrom=0.5,
             scale_bar_visible=False,
-            show_fft=True,
-            show_histogram=True,
+            show_panels=True,
             show_stats=False,
             log_scale=True,
             auto_contrast=True,
@@ -142,8 +141,7 @@ class TestShow2D:
         assert widget.cmap == "viridis"
         assert widget.pixel_size_angstrom == 0.5
         assert widget.scale_bar_visible == False
-        assert widget.show_fft == True
-        assert widget.show_histogram == True
+        assert widget.show_panels == True
         assert widget.show_stats == False
         assert widget.log_scale == True
         assert widget.auto_contrast == True

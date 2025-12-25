@@ -82,9 +82,8 @@ function Show2D() {
   const [statsMax] = useModelState<number[]>("stats_max");
   const [statsStd] = useModelState<number[]>("stats_std");
 
-  // FFT & Histogram
-  const [showFft, setShowFft] = useModelState<boolean>("show_fft");
-  const [showHistogram, setShowHistogram] = useModelState<boolean>("show_histogram");
+  // Analysis Panels (FFT + Histogram)
+  const [showPanels, setShowPanels] = useModelState<boolean>("show_panels");
   const [histogramCounts] = useModelState<number[]>("histogram_counts");
 
   // Selection
@@ -311,7 +310,7 @@ function Show2D() {
   // Render FFT with WebGPU
   // -------------------------------------------------------------------------
   React.useEffect(() => {
-    if (!showFft || !fftCanvasRef.current || !rawDataRef.current) return;
+    if (!showPanels || !fftCanvasRef.current || !rawDataRef.current) return;
     if (!rawDataRef.current[selectedIdx]) return;
 
     const canvas = fftCanvasRef.current;
@@ -392,13 +391,13 @@ function Show2D() {
     };
 
     computeFFT();
-  }, [showFft, selectedIdx, width, height, gpuReady, allBytes, panelSize, fftZoom, fftPanX, fftPanY, dataReady]);
+  }, [showPanels, selectedIdx, width, height, gpuReady, allBytes, panelSize, fftZoom, fftPanX, fftPanY, dataReady]);
 
   // -------------------------------------------------------------------------
   // Render Histogram
   // -------------------------------------------------------------------------
   React.useEffect(() => {
-    if (!showHistogram || !histCanvasRef.current) return;
+    if (!showPanels || !histCanvasRef.current) return;
 
     const canvas = histCanvasRef.current;
     const ctx = canvas.getContext("2d");
@@ -428,7 +427,7 @@ function Show2D() {
       const barHeight = (histogramCounts[i] / maxCount) * drawHeight;
       ctx.fillRect(padding + i * barWidth, h - padding - barHeight, barWidth - 1, barHeight);
     }
-  }, [showHistogram, histogramCounts, panelSize, selectedIdx, dataReady]);
+  }, [showPanels, histogramCounts, panelSize, selectedIdx, dataReady]);
 
   // -------------------------------------------------------------------------
   // Mouse Handlers for Zoom/Pan
@@ -714,56 +713,52 @@ function Show2D() {
           )}
         </Box>
 
-        {/* Side panels - FFT and Histogram (equal sized) */}
-        {(showFft || showHistogram) && (
+        {/* Side panels - FFT and Histogram */}
+        {showPanels && (
           <Stack spacing={1}>
-            {showFft && (
-              <Box sx={{ position: "relative", bgcolor: colors.bgPanel, border: "1px solid " + colors.border, borderRadius: 0.5, p: 0.75 }}>
-                <Typography sx={{ fontSize: 10, color: colors.textMuted, textTransform: "uppercase", mb: 0.5 }}>
-                  FFT {isGallery && "(" + (labels?.[selectedIdx] || "#" + (selectedIdx + 1)) + ")"} {fftZoom !== DEFAULT_FFT_ZOOM && "(" + fftZoom.toFixed(1) + "×)"}
-                </Typography>
-                <canvas
-                  ref={fftCanvasRef}
-                  width={panelSize}
-                  height={panelSize}
-                  style={{ cursor: "grab", imageRendering: "pixelated", display: "block" }}
-                  onWheel={handleFftWheel}
-                  onDoubleClick={handleFftDoubleClick}
-                  onMouseDown={handleFftMouseDown}
-                  onMouseMove={handleFftMouseMove}
-                  onMouseUp={handleFftMouseUp}
-                  onMouseLeave={handleFftMouseUp}
-                />
-                {/* Panel resize handle */}
-                <Box
-                  onMouseDown={handlePanelResizeStart}
-                  sx={{
-                    position: "absolute", bottom: 2, right: 2, width: 10, height: 10,
-                    cursor: "nwse-resize", opacity: 0.4,
-                    background: "linear-gradient(135deg, transparent 50%, " + colors.textMuted + " 50%)",
-                    "&:hover": { opacity: 1 }
-                  }}
-                />
-              </Box>
-            )}
-            {showHistogram && (
-              <Box sx={{ bgcolor: colors.bgPanel, border: "1px solid " + colors.border, borderRadius: 0.5, p: 0.75, position: "relative" }}>
-                <Typography sx={{ fontSize: 10, color: colors.textMuted, textTransform: "uppercase", mb: 0.5 }}>
-                  Histogram {isGallery && "(" + (labels?.[selectedIdx] || "#" + (selectedIdx + 1)) + ")"}
-                </Typography>
-                <canvas ref={histCanvasRef} width={panelSize} height={panelSize} style={{ display: "block" }} />
-                {/* Panel resize handle (resizes both FFT and Histogram together) */}
-                <Box
-                  onMouseDown={handlePanelResizeStart}
-                  sx={{
-                    position: "absolute", bottom: 2, right: 2, width: 10, height: 10,
-                    cursor: "nwse-resize", opacity: 0.4,
-                    background: "linear-gradient(135deg, transparent 50%, " + colors.textMuted + " 50%)",
-                    "&:hover": { opacity: 1 }
-                  }}
-                />
-              </Box>
-            )}
+            <Box sx={{ position: "relative", bgcolor: colors.bgPanel, border: "1px solid " + colors.border, borderRadius: 0.5, p: 0.75 }}>
+              <Typography sx={{ fontSize: 10, color: colors.textMuted, textTransform: "uppercase", mb: 0.5 }}>
+                FFT {isGallery && "(" + (labels?.[selectedIdx] || "#" + (selectedIdx + 1)) + ")"} {fftZoom !== DEFAULT_FFT_ZOOM && "(" + fftZoom.toFixed(1) + "×)"}
+              </Typography>
+              <canvas
+                ref={fftCanvasRef}
+                width={panelSize}
+                height={panelSize}
+                style={{ cursor: "grab", imageRendering: "pixelated", display: "block" }}
+                onWheel={handleFftWheel}
+                onDoubleClick={handleFftDoubleClick}
+                onMouseDown={handleFftMouseDown}
+                onMouseMove={handleFftMouseMove}
+                onMouseUp={handleFftMouseUp}
+                onMouseLeave={handleFftMouseUp}
+              />
+              {/* Panel resize handle */}
+              <Box
+                onMouseDown={handlePanelResizeStart}
+                sx={{
+                  position: "absolute", bottom: 2, right: 2, width: 10, height: 10,
+                  cursor: "nwse-resize", opacity: 0.4,
+                  background: "linear-gradient(135deg, transparent 50%, " + colors.textMuted + " 50%)",
+                  "&:hover": { opacity: 1 }
+                }}
+              />
+            </Box>
+            <Box sx={{ bgcolor: colors.bgPanel, border: "1px solid " + colors.border, borderRadius: 0.5, p: 0.75, position: "relative" }}>
+              <Typography sx={{ fontSize: 10, color: colors.textMuted, textTransform: "uppercase", mb: 0.5 }}>
+                Histogram {isGallery && "(" + (labels?.[selectedIdx] || "#" + (selectedIdx + 1)) + ")"}
+              </Typography>
+              <canvas ref={histCanvasRef} width={panelSize} height={panelSize} style={{ display: "block" }} />
+              {/* Panel resize handle */}
+              <Box
+                onMouseDown={handlePanelResizeStart}
+                sx={{
+                  position: "absolute", bottom: 2, right: 2, width: 10, height: 10,
+                  cursor: "nwse-resize", opacity: 0.4,
+                  background: "linear-gradient(135deg, transparent 50%, " + colors.textMuted + " 50%)",
+                  "&:hover": { opacity: 1 }
+                }}
+              />
+            </Box>
           </Stack>
         )}
       </Stack>
@@ -774,8 +769,7 @@ function Show2D() {
           {[
             { label: "Log", checked: logScale, onChange: () => setLogScale(!logScale) },
             { label: "Auto", checked: autoContrast, onChange: () => setAutoContrast(!autoContrast) },
-            { label: "FFT", checked: showFft, onChange: () => setShowFft(!showFft) },
-            { label: "Hist", checked: showHistogram, onChange: () => setShowHistogram(!showHistogram) },
+            { label: "Panels", checked: showPanels, onChange: () => setShowPanels(!showPanels) },
           ].map(({ label, checked, onChange }) => (
             <Stack key={label} direction="row" alignItems="center" spacing={0.5}>
               <Switch size="small" checked={checked} onChange={onChange} sx={{ "& .MuiSwitch-thumb": { width: 12, height: 12 }, "& .MuiSwitch-track": { height: 14 } }} />
