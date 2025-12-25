@@ -5,7 +5,11 @@
 
 Interactive Jupyter widgets for scientific image visualization. Works with NumPy, CuPy, and PyTorch arrays.
 
+### View 2D images
+
 ![Show2D Demo](assets/show2d_demo.png)
+
+### View a series of images
 
 ![Show3D Demo](assets/show3d_demo.png)
 
