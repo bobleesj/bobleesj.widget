@@ -39,7 +39,7 @@ type ZoomState = { zoom: number; panX: number; panY: number };
 // ============================================================================
 // Constants
 // ============================================================================
-const SINGLE_IMAGE_TARGET = 200;
+const SINGLE_IMAGE_TARGET = 300;
 const GALLERY_IMAGE_TARGET = 100;
 const PANEL_SIZE = 150;
 const DEFAULT_FFT_ZOOM = 3;
