@@ -67,8 +67,7 @@ function Show2D() {
   const [scaleBarLengthPx] = useModelState<number>("scale_bar_length_px");
   const [scaleBarThicknessPx] = useModelState<number>("scale_bar_thickness_px");
   const [scaleBarFontSizePx] = useModelState<number>("scale_bar_font_size_px");
-  const [fftPanelSizePx] = useModelState<number>("fft_panel_size_px");
-  const [histogramPanelSizePx] = useModelState<number>("histogram_panel_size_px");
+  const [panelSizePx] = useModelState<number>("panel_size_px");
   const [imageWidthPx] = useModelState<number>("image_width_px");
 
   // Scale bar
@@ -130,7 +129,6 @@ function Show2D() {
   // Resizable state
   const [canvasSize, setCanvasSize] = React.useState(SINGLE_IMAGE_TARGET);
   const [panelSize, setPanelSize] = React.useState(PANEL_SIZE);
-  const [histPanelSize, setHistPanelSize] = React.useState(PANEL_SIZE);
 
   // Sync initial sizes from traits
   React.useEffect(() => {
@@ -138,15 +136,11 @@ function Show2D() {
   }, [imageWidthPx]);
 
   React.useEffect(() => {
-    if (fftPanelSizePx > 0) setPanelSize(fftPanelSizePx);
-  }, [fftPanelSizePx]);
+    if (panelSizePx > 0) setPanelSize(panelSizePx);
+  }, [panelSizePx]);
 
-  React.useEffect(() => {
-    if (histogramPanelSizePx > 0) setHistPanelSize(histogramPanelSizePx);
-  }, [histogramPanelSizePx]);
   const [isResizingCanvas, setIsResizingCanvas] = React.useState(false);
   const [isResizingPanel, setIsResizingPanel] = React.useState(false);
-  const [isResizingHistPanel, setIsResizingHistPanel] = React.useState(false);
   const [resizeStart, setResizeStart] = React.useState<{ x: number, y: number, size: number } | null>(null);
 
   // WebGPU FFT
@@ -410,8 +404,8 @@ function Show2D() {
     const ctx = canvas.getContext("2d");
     if (!ctx) return;
 
-    const w = histPanelSize;
-    const h = histPanelSize;
+    const w = panelSize;
+    const h = panelSize;
     
     // Always clear and fill background
     ctx.fillStyle = colors.bgPanel;
@@ -423,13 +417,18 @@ function Show2D() {
     const maxCount = Math.max(...histogramCounts);
     if (maxCount === 0) return;
 
-    const barWidth = w / histogramCounts.length;
+    // Add padding for centering
+    const padding = 8;
+    const drawWidth = w - 2 * padding;
+    const drawHeight = h - padding - 5;  // 5px bottom margin for axis
+    const barWidth = drawWidth / histogramCounts.length;
+    
     ctx.fillStyle = colors.accent;
     for (let i = 0; i < histogramCounts.length; i++) {
-      const barHeight = (histogramCounts[i] / maxCount) * (h - 10);
-      ctx.fillRect(i * barWidth, h - barHeight, barWidth - 1, barHeight);
+      const barHeight = (histogramCounts[i] / maxCount) * drawHeight;
+      ctx.fillRect(padding + i * barWidth, h - padding - barHeight, barWidth - 1, barHeight);
     }
-  }, [showHistogram, histogramCounts, histPanelSize, selectedIdx, dataReady]);
+  }, [showHistogram, histogramCounts, panelSize, selectedIdx, dataReady]);
 
   // -------------------------------------------------------------------------
   // Mouse Handlers for Zoom/Pan
@@ -552,15 +551,8 @@ function Show2D() {
     setResizeStart({ x: e.clientX, y: e.clientY, size: panelSize });
   };
 
-  const handleHistPanelResizeStart = (e: React.MouseEvent) => {
-    e.stopPropagation();
-    e.preventDefault();
-    setIsResizingHistPanel(true);
-    setResizeStart({ x: e.clientX, y: e.clientY, size: histPanelSize });
-  };
-
   React.useEffect(() => {
-    if (!isResizingCanvas && !isResizingPanel && !isResizingHistPanel) return;
+    if (!isResizingCanvas && !isResizingPanel) return;
 
     const handleMouseMove = (e: MouseEvent) => {
       if (!resizeStart) return;
@@ -572,16 +564,12 @@ function Show2D() {
       } else if (isResizingPanel) {
         const newSize = Math.max(80, Math.min(250, resizeStart.size + delta));
         setPanelSize(newSize);
-      } else if (isResizingHistPanel) {
-        const newSize = Math.max(80, Math.min(250, resizeStart.size + delta));
-        setHistPanelSize(newSize);
       }
     };
 
     const handleMouseUp = () => {
       setIsResizingCanvas(false);
       setIsResizingPanel(false);
-      setIsResizingHistPanel(false);
       setResizeStart(null);
     };
 
@@ -591,7 +579,7 @@ function Show2D() {
       document.removeEventListener("mousemove", handleMouseMove);
       document.removeEventListener("mouseup", handleMouseUp);
     };
-  }, [isResizingCanvas, isResizingPanel, isResizingHistPanel, resizeStart]);
+  }, [isResizingCanvas, isResizingPanel, resizeStart]);
 
   // -------------------------------------------------------------------------
   // Render
@@ -738,7 +726,7 @@ function Show2D() {
                   ref={fftCanvasRef}
                   width={panelSize}
                   height={panelSize}
-                  style={{ cursor: "grab", imageRendering: "pixelated" }}
+                  style={{ cursor: "grab", imageRendering: "pixelated", display: "block" }}
                   onWheel={handleFftWheel}
                   onDoubleClick={handleFftDoubleClick}
                   onMouseDown={handleFftMouseDown}
@@ -763,10 +751,10 @@ function Show2D() {
                 <Typography sx={{ fontSize: 10, color: colors.textMuted, textTransform: "uppercase", mb: 0.5 }}>
                   Histogram {isGallery && "(" + (labels?.[selectedIdx] || "#" + (selectedIdx + 1)) + ")"}
                 </Typography>
-                <canvas ref={histCanvasRef} width={histPanelSize} height={histPanelSize} />
-                {/* Histogram panel resize handle */}
+                <canvas ref={histCanvasRef} width={panelSize} height={panelSize} style={{ display: "block" }} />
+                {/* Panel resize handle (resizes both FFT and Histogram together) */}
                 <Box
-                  onMouseDown={handleHistPanelResizeStart}
+                  onMouseDown={handlePanelResizeStart}
                   sx={{
                     position: "absolute", bottom: 2, right: 2, width: 10, height: 10,
                     cursor: "nwse-resize", opacity: 0.4,

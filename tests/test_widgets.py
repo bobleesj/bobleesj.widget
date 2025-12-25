@@ -99,12 +99,12 @@ class TestShow2D:
         widget = Show2D(data, 
                        scale_bar_length_px=100,
                        scale_bar_thickness_px=10,
-                       fft_panel_size_px=200,
+                       panel_size_px=200,
                        image_width_px=500)
         
         assert widget.scale_bar_length_px == 100
         assert widget.scale_bar_thickness_px == 10
-        assert widget.fft_panel_size_px == 200
+        assert widget.panel_size_px == 200
         assert widget.image_width_px == 500
 
     def test_full_parameter_suite(self):
@@ -131,7 +131,7 @@ class TestShow2D:
             scale_bar_length_px=75,
             scale_bar_thickness_px=6,
             scale_bar_font_size_px=20,
-            fft_panel_size_px=250,
+            panel_size_px=250,
             image_width_px=600
         )
         
@@ -151,7 +151,7 @@ class TestShow2D:
         assert widget.scale_bar_length_px == 75
         assert widget.scale_bar_thickness_px == 6
         assert widget.scale_bar_font_size_px == 20
-        assert widget.fft_panel_size_px == 250
+        assert widget.panel_size_px == 250
         assert widget.image_width_px == 600
 
 

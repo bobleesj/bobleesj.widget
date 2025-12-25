@@ -106,8 +106,7 @@ class Show2D(anywidget.AnyWidget):
     # =========================================================================
     # Sizing & Customization
     # =========================================================================
-    fft_panel_size_px = traitlets.Int(150).tag(sync=True)
-    histogram_panel_size_px = traitlets.Int(150).tag(sync=True)
+    panel_size_px = traitlets.Int(150).tag(sync=True)  # Size for FFT and Histogram panels
     image_width_px = traitlets.Int(0).tag(sync=True)  # If 0, use frontend defaults
 
     # =========================================================================
@@ -156,8 +155,7 @@ class Show2D(anywidget.AnyWidget):
         scale_bar_length_px: int = 50,
         scale_bar_thickness_px: int = 4,
         scale_bar_font_size_px: int = 16,
-        fft_panel_size_px: int = 150,
-        histogram_panel_size_px: int = 150,
+        panel_size_px: int = 150,
         image_width_px: int = 0,
         **kwargs,
     ):
@@ -192,8 +190,7 @@ class Show2D(anywidget.AnyWidget):
         self.scale_bar_length_px = scale_bar_length_px
         self.scale_bar_thickness_px = scale_bar_thickness_px
         self.scale_bar_font_size_px = scale_bar_font_size_px
-        self.fft_panel_size_px = fft_panel_size_px
-        self.histogram_panel_size_px = histogram_panel_size_px
+        self.panel_size_px = panel_size_px
         self.image_width_px = image_width_px
         self.show_fft = show_fft
         self.show_histogram = show_histogram
