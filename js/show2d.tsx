@@ -83,7 +83,7 @@ function Show2D() {
   const [statsStd] = useModelState<number[]>("stats_std");
 
   // Analysis Panels (FFT + Histogram)
-  const [showPanels, setShowPanels] = useModelState<boolean>("show_panels");
+  const [showFft, setShowFft] = useModelState<boolean>("show_fft");
   const [histogramCounts] = useModelState<number[]>("histogram_counts");
 
   // Selection
@@ -310,7 +310,7 @@ function Show2D() {
   // Render FFT with WebGPU
   // -------------------------------------------------------------------------
   React.useEffect(() => {
-    if (!showPanels || !fftCanvasRef.current || !rawDataRef.current) return;
+    if (!showFft || !fftCanvasRef.current || !rawDataRef.current) return;
     if (!rawDataRef.current[selectedIdx]) return;
 
     const canvas = fftCanvasRef.current;
@@ -391,13 +391,13 @@ function Show2D() {
     };
 
     computeFFT();
-  }, [showPanels, selectedIdx, width, height, gpuReady, allBytes, panelSize, fftZoom, fftPanX, fftPanY, dataReady]);
+  }, [showFft, selectedIdx, width, height, gpuReady, allBytes, panelSize, fftZoom, fftPanX, fftPanY, dataReady]);
 
   // -------------------------------------------------------------------------
   // Render Histogram
   // -------------------------------------------------------------------------
   React.useEffect(() => {
-    if (!showPanels || !histCanvasRef.current) return;
+    if (!showFft || !histCanvasRef.current) return;
 
     const canvas = histCanvasRef.current;
     const ctx = canvas.getContext("2d");
@@ -427,7 +427,7 @@ function Show2D() {
       const barHeight = (histogramCounts[i] / maxCount) * drawHeight;
       ctx.fillRect(padding + i * barWidth, h - padding - barHeight, barWidth - 1, barHeight);
     }
-  }, [showPanels, histogramCounts, panelSize, selectedIdx, dataReady]);
+  }, [showFft, histogramCounts, panelSize, selectedIdx, dataReady]);
 
   // -------------------------------------------------------------------------
   // Mouse Handlers for Zoom/Pan
@@ -714,7 +714,7 @@ function Show2D() {
         </Box>
 
         {/* Side panels - FFT and Histogram */}
-        {showPanels && (
+        {showFft && (
           <Stack spacing={1}>
             <Box sx={{ position: "relative", bgcolor: colors.bgPanel, border: "1px solid " + colors.border, borderRadius: 0.5, p: 0.75 }}>
               <Typography sx={{ fontSize: 10, color: colors.textMuted, textTransform: "uppercase", mb: 0.5 }}>
@@ -769,7 +769,7 @@ function Show2D() {
           {[
             { label: "Log", checked: logScale, onChange: () => setLogScale(!logScale) },
             { label: "Auto", checked: autoContrast, onChange: () => setAutoContrast(!autoContrast) },
-            { label: "Panels", checked: showPanels, onChange: () => setShowPanels(!showPanels) },
+            { label: "FFT", checked: showFft, onChange: () => setShowFft(!showFft) },
           ].map(({ label, checked, onChange }) => (
             <Stack key={label} direction="row" alignItems="center" spacing={0.5}>
               <Switch size="small" checked={checked} onChange={onChange} sx={{ "& .MuiSwitch-thumb": { width: 12, height: 12 }, "& .MuiSwitch-track": { height: 14 } }} />

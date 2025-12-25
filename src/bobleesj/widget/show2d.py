@@ -45,9 +45,7 @@ class Show2D(anywidget.AnyWidget):
     pixel_size : float, optional
         Pixel size in nm for scale bar display.
     show_fft : bool, default False
-        Show FFT of image(s).
-    show_histogram : bool, default False
-        Show intensity histogram.
+        Show FFT and histogram panels.
     show_stats : bool, default True
         Show statistics (mean, min, max, std).
     log_scale : bool, default False
@@ -122,7 +120,7 @@ class Show2D(anywidget.AnyWidget):
     # =========================================================================
     # Analysis Panels (FFT + Histogram shown together)
     # =========================================================================
-    show_panels = traitlets.Bool(False).tag(sync=True)
+    show_fft = traitlets.Bool(False).tag(sync=True)
     fft_bytes = traitlets.Bytes(b"").tag(sync=True)
     histogram_bins = traitlets.List(traitlets.Float()).tag(sync=True)
     histogram_counts = traitlets.List(traitlets.Int()).tag(sync=True)
@@ -140,7 +138,7 @@ class Show2D(anywidget.AnyWidget):
         cmap: Union[str, Colormap] = Colormap.INFERNO,
         pixel_size_angstrom: float = 0.0,
         scale_bar_visible: bool = True,
-        show_panels: bool = False,
+        show_fft: bool = False,
         show_controls: bool = True,
         show_stats: bool = True,
         log_scale: bool = False,
@@ -186,7 +184,7 @@ class Show2D(anywidget.AnyWidget):
         self.scale_bar_font_size_px = scale_bar_font_size_px
         self.panel_size_px = panel_size_px
         self.image_width_px = image_width_px
-        self.show_panels = show_panels
+        self.show_fft = show_fft
         self.show_controls = show_controls
         self.show_stats = show_stats
         self.log_scale = log_scale
@@ -200,14 +198,14 @@ class Show2D(anywidget.AnyWidget):
         self._update_all_frames()
 
         # Initial FFT/histogram for selected image
-        if show_panels:
+        if show_fft:
             self._compute_fft()
             self._compute_histogram()
 
         # Observe changes
         self.observe(self._on_options_change, names=["log_scale", "auto_contrast", "percentile_low", "percentile_high"])
         self.observe(self._on_selected_change, names=["selected_idx"])
-        self.observe(self._on_panels_change, names=["show_panels"])
+        self.observe(self._on_fft_change, names=["show_fft"])
 
     def _compute_all_stats(self):
         """Compute statistics for all images."""
@@ -289,12 +287,12 @@ class Show2D(anywidget.AnyWidget):
 
     def _on_selected_change(self, change):
         """Update FFT/histogram when selection changes."""
-        if self.show_panels:
+        if self.show_fft:
             self._compute_fft()
             self._compute_histogram()
 
-    def _on_panels_change(self, change):
-        """Compute FFT and histogram when panels enabled."""
+    def _on_fft_change(self, change):
+        """Compute FFT and histogram when show_fft enabled."""
         if change["new"]:
             self._compute_fft()
             self._compute_histogram()
