@@ -209,15 +209,17 @@ function Show2D() {
       targets.push(canvasRefs.current[0]);
     }
 
-    // Always add FFT
-    targets.push(fftCanvasRef.current);
+    // Always add FFT when visible
+    if (showFft && fftCanvasRef.current) {
+      targets.push(fftCanvasRef.current);
+    }
 
     targets.forEach(t => t?.addEventListener("wheel", preventDefault, { passive: false }));
 
     return () => {
       targets.forEach(t => t?.removeEventListener("wheel", preventDefault));
     };
-  }, [nImages, canvasReady, selectedIdx, isGallery, linkedZoom, dataReady]);
+  }, [nImages, canvasReady, selectedIdx, isGallery, linkedZoom, dataReady, showFft]);
 
   // -------------------------------------------------------------------------
   // Render Images (JS-side normalization for instant Log/Auto toggle)
