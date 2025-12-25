@@ -136,9 +136,12 @@ class Show3D(anywidget.AnyWidget):
     # ROI Selection
     # =========================================================================
     roi_active = traitlets.Bool(False).tag(sync=True)
+    roi_shape = traitlets.Unicode("circle").tag(sync=True)  # circle, square, rectangle
     roi_x = traitlets.Int(0).tag(sync=True)
     roi_y = traitlets.Int(0).tag(sync=True)
-    roi_radius = traitlets.Int(10).tag(sync=True)
+    roi_radius = traitlets.Int(10).tag(sync=True)  # For circle/square: radius or half-size
+    roi_width = traitlets.Int(20).tag(sync=True)   # For rectangle
+    roi_height = traitlets.Int(20).tag(sync=True)  # For rectangle
     roi_mean = traitlets.Float(0.0).tag(sync=True)
 
     # =========================================================================
@@ -186,7 +189,7 @@ class Show3D(anywidget.AnyWidget):
         auto_contrast: bool = False,
         percentile_low: float = 1.0,
         percentile_high: float = 99.0,
-        fps: float = 5.0,
+        fps: float = 1.0,
         timestamps: Optional[List[float]] = None,
         timestamp_unit: str = "s",
         show_fft: bool = False,
@@ -261,7 +264,7 @@ class Show3D(anywidget.AnyWidget):
         self.observe(self._on_slice_change, names=["slice_idx"])
         self.observe(self._on_display_change, names=["log_scale", "auto_contrast", "percentile_low", "percentile_high"])
         self.observe(self._on_compare_change, names=["compare_idx", "compare_mode"])
-        self.observe(self._on_roi_change, names=["roi_x", "roi_y", "roi_radius", "roi_active"])
+        self.observe(self._on_roi_change, names=["roi_x", "roi_y", "roi_radius", "roi_active", "roi_shape", "roi_width", "roi_height"])
         self.observe(self._on_fft_change, names=["show_fft"])
 
         # Initial update
@@ -334,9 +337,22 @@ class Show3D(anywidget.AnyWidget):
             self._update_histogram(frame)
 
     def _update_roi_mean(self, frame: np.ndarray):
-        """Compute mean value within ROI."""
+        """Compute mean value within ROI based on shape."""
         y, x = np.ogrid[0:self.height, 0:self.width]
-        mask = (x - self.roi_x)**2 + (y - self.roi_y)**2 <= self.roi_radius**2
+        
+        if self.roi_shape == "circle":
+            mask = (x - self.roi_x)**2 + (y - self.roi_y)**2 <= self.roi_radius**2
+        elif self.roi_shape == "square":
+            half = self.roi_radius
+            mask = (np.abs(x - self.roi_x) <= half) & (np.abs(y - self.roi_y) <= half)
+        elif self.roi_shape == "rectangle":
+            half_w = self.roi_width // 2
+            half_h = self.roi_height // 2
+            mask = (np.abs(x - self.roi_x) <= half_w) & (np.abs(y - self.roi_y) <= half_h)
+        else:
+            # Default to circle
+            mask = (x - self.roi_x)**2 + (y - self.roi_y)**2 <= self.roi_radius**2
+        
         if mask.sum() > 0:
             self.roi_mean = float(frame[mask].mean())
         else:

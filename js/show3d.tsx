@@ -30,7 +30,7 @@ import {
   applyColormapToImage,
   calculateDisplayScale,
   drawScaleBar,
-  drawROICircle,
+  drawROI,
   extractBytes,
   formatNumber,
 } from "./core";
@@ -44,7 +44,11 @@ import "./show3d.css";
 const CANVAS_TARGET_SIZE = 400;
 const PANEL_SIZE = 150; // Equal size for both FFT and histogram
 const DEFAULT_FFT_ZOOM = 3; // Default FFT zoom to see center details
-const DEFAULT_FPS = 5;
+const DEFAULT_FPS = 1; // 1 fps = 1000ms per frame
+
+// ROI shapes
+const ROI_SHAPES = ["circle", "square", "rectangle"] as const;
+type RoiShape = typeof ROI_SHAPES[number];
 
 // ============================================================================
 // Main Component
@@ -97,9 +101,12 @@ function Show3D() {
 
   // ROI
   const [roiActive, setRoiActive] = useModelState<boolean>("roi_active");
+  const [roiShape, setRoiShape] = useModelState<RoiShape>("roi_shape");
   const [roiX, setRoiX] = useModelState<number>("roi_x");
   const [roiY, setRoiY] = useModelState<number>("roi_y");
   const [roiRadius, setRoiRadius] = useModelState<number>("roi_radius");
+  const [roiWidth, setRoiWidth] = useModelState<number>("roi_width");
+  const [roiHeight, setRoiHeight] = useModelState<number>("roi_height");
   const [roiMean] = useModelState<number>("roi_mean");
 
   // FFT (shows both FFT and histogram together)
@@ -298,9 +305,11 @@ function Show3D() {
       const screenX = roiX * displayScale * zoom + panX;
       const screenY = roiY * displayScale * zoom + panY;
       const screenRadius = roiRadius * displayScale * zoom;
-      drawROICircle(ctx, screenX, screenY, screenRadius, isDraggingROI);
+      const screenWidth = roiWidth * displayScale * zoom;
+      const screenHeight = roiHeight * displayScale * zoom;
+      drawROI(ctx, screenX, screenY, roiShape || "circle", screenRadius, screenWidth, screenHeight, isDraggingROI);
     }
-  }, [pixelSize, scaleBarVisible, scaleBarLengthPx, scaleBarThicknessPx, scaleBarFontSizePx, roiActive, roiX, roiY, roiRadius, isDraggingROI, width, canvasW, canvasH, displayScale, zoom, panX, panY]);
+  }, [pixelSize, scaleBarVisible, scaleBarLengthPx, scaleBarThicknessPx, scaleBarFontSizePx, roiActive, roiShape, roiX, roiY, roiRadius, roiWidth, roiHeight, isDraggingROI, width, canvasW, canvasH, displayScale, zoom, panX, panY]);
 
   // -------------------------------------------------------------------------
   // Render FFT with WebGPU and zoom/pan
@@ -746,50 +755,66 @@ function Show3D() {
         </Typography>
       </Stack>
 
-      {/* Second row: FPS slider + options */}
-      <Stack direction="row" spacing={2} sx={{ mt: 1, flexWrap: "wrap" }} alignItems="center">
-        {/* Frame ms slider (200-3000ms, default 1000ms) */}
-        <Stack direction="row" spacing={1} alignItems="center" sx={{ bgcolor: colors.bgPanel, px: 1, py: 0.5, borderRadius: 0.5, border: "1px solid " + colors.border, minWidth: 150 }}>
-          <Typography sx={{ fontSize: 10, color: colors.textDim }}>ms/frame</Typography>
+      {/* Second row: Organized control groups */}
+      <Stack direction="row" spacing={1.5} sx={{ mt: 1, flexWrap: "wrap" }} alignItems="center">
+        {/* Playback group */}
+        <Stack direction="row" spacing={1} alignItems="center" sx={{ bgcolor: colors.bgPanel, px: 1, py: 0.5, borderRadius: 0.5, border: "1px solid " + colors.border }}>
+          <Typography sx={{ fontSize: 10, color: colors.textDim }}>ms</Typography>
           <Slider
             value={Math.round(1000 / (fps || 1))}
-            min={200}
-            max={3000}
+            min={100}
+            max={2000}
             step={100}
             onChange={(_, v) => setFps(1000 / (v as number))}
-            sx={{ color: colors.accent, width: 60 }}
+            sx={{ color: colors.accent, width: 50 }}
           />
-          <Typography sx={{ fontSize: 10, color: colors.textMuted, minWidth: 35 }}>{Math.round(1000 / (fps || 1))}</Typography>
+          <Typography sx={{ fontSize: 10, color: colors.textMuted, minWidth: 30 }}>{Math.round(1000 / (fps || 1))}</Typography>
+          <Switch size="small" checked={loop} onChange={() => setLoop(!loop)} sx={{ '& .MuiSwitch-thumb': { width: 10, height: 10 }, '& .MuiSwitch-switchBase': { padding: '5px' } }} />
+          <Typography sx={{ fontSize: 10, color: colors.textMuted }}>Loop</Typography>
         </Stack>
 
-        {/* ROI Size Slider */}
-        {roiActive && (
-          <Stack direction="row" spacing={1} alignItems="center" sx={{ bgcolor: colors.bgPanel, px: 1, py: 0.5, borderRadius: 0.5, border: "1px solid " + colors.border, minWidth: 140 }}>
-            <Typography sx={{ fontSize: 10, color: colors.textDim }}>ROI</Typography>
-            <Slider
-              value={roiRadius}
-              min={1}
-              max={Math.min(width, height) / 2}
-              onChange={(_, v) => setRoiRadius(v as number)}
-              sx={{ color: colors.accent, width: 60 }}
-            />
-            <Typography sx={{ fontSize: 10, color: colors.textMuted, minWidth: 20 }}>{roiRadius}</Typography>
-          </Stack>
-        )}
+        {/* Display group */}
+        <Stack direction="row" spacing={0.5} alignItems="center" sx={{ bgcolor: colors.bgPanel, px: 1, py: 0.5, borderRadius: 0.5, border: "1px solid " + colors.border }}>
+          <Switch size="small" checked={logScale} onChange={() => setLogScale(!logScale)} sx={{ '& .MuiSwitch-thumb': { width: 10, height: 10 }, '& .MuiSwitch-switchBase': { padding: '5px' } }} />
+          <Typography sx={{ fontSize: 10, color: colors.textMuted, mr: 0.5 }}>Log</Typography>
+          <Switch size="small" checked={autoContrast} onChange={() => setAutoContrast(!autoContrast)} sx={{ '& .MuiSwitch-thumb': { width: 10, height: 10 }, '& .MuiSwitch-switchBase': { padding: '5px' } }} />
+          <Typography sx={{ fontSize: 10, color: colors.textMuted, mr: 0.5 }}>Auto</Typography>
+          <Switch size="small" checked={showFft} onChange={() => setShowFft(!showFft)} sx={{ '& .MuiSwitch-thumb': { width: 10, height: 10 }, '& .MuiSwitch-switchBase': { padding: '5px' } }} />
+          <Typography sx={{ fontSize: 10, color: colors.textMuted }}>FFT</Typography>
+        </Stack>
 
-        {/* Toggles */}
-        {[
-          { label: "Log", checked: logScale, onChange: () => setLogScale(!logScale) },
-          { label: "Auto", checked: autoContrast, onChange: () => setAutoContrast(!autoContrast) },
-          { label: "FFT", checked: showFft, onChange: () => setShowFft(!showFft) },
-          { label: "ROI", checked: roiActive, onChange: () => { setRoiActive(!roiActive); if (!roiActive) { setRoiX(Math.floor(width / 2)); setRoiY(Math.floor(height / 2)); } } },
-          { label: "Loop", checked: loop, onChange: () => setLoop(!loop) },
-        ].map(({ label, checked, onChange }) => (
-          <Stack key={label} direction="row" alignItems="center" spacing={0.5}>
-            <Switch size="small" checked={checked} onChange={onChange} sx={{ '& .MuiSwitch-thumb': { width: 12, height: 12 }, '& .MuiSwitch-switchBase': { padding: '4px' } }} />
-            <Typography sx={{ fontSize: 11, color: colors.textMuted }}>{label}</Typography>
-          </Stack>
-        ))}
+        {/* ROI group */}
+        <Stack direction="row" spacing={0.5} alignItems="center" sx={{ bgcolor: colors.bgPanel, px: 1, py: 0.5, borderRadius: 0.5, border: "1px solid " + colors.border }}>
+          <Switch size="small" checked={roiActive} onChange={() => { setRoiActive(!roiActive); if (!roiActive) { setRoiX(Math.floor(width / 2)); setRoiY(Math.floor(height / 2)); } }} sx={{ '& .MuiSwitch-thumb': { width: 10, height: 10 }, '& .MuiSwitch-switchBase': { padding: '5px' } }} />
+          <Typography sx={{ fontSize: 10, color: colors.textMuted }}>ROI</Typography>
+          {roiActive && (
+            <>
+              <Select
+                size="small"
+                value={roiShape || "circle"}
+                onChange={(e) => setRoiShape(e.target.value as RoiShape)}
+                MenuProps={upwardMenuProps}
+                sx={{ minWidth: 60, bgcolor: colors.bgInput, color: colors.textPrimary, fontSize: 10, ml: 0.5, "& .MuiSelect-select": { py: 0.25, px: 0.5 } }}
+              >
+                {ROI_SHAPES.map((shape) => (
+                  <MenuItem key={shape} value={shape} sx={{ fontSize: 10 }}>
+                    {shape === "circle" ? "○" : shape === "square" ? "□" : "▭"} {shape}
+                  </MenuItem>
+                ))}
+              </Select>
+              <Slider
+                value={roiShape === "rectangle" ? roiWidth : roiRadius}
+                min={5}
+                max={Math.min(width, height) / 2}
+                onChange={(_, v) => roiShape === "rectangle" ? setRoiWidth(v as number) : setRoiRadius(v as number)}
+                sx={{ color: colors.accent, width: 40, ml: 0.5 }}
+              />
+              <Typography sx={{ fontSize: 10, color: colors.textMuted, minWidth: 20 }}>
+                {roiShape === "rectangle" ? roiWidth : roiRadius}
+              </Typography>
+            </>
+          )}
+        </Stack>
 
         {/* Colormap */}
         <Select
@@ -797,7 +822,7 @@ function Show3D() {
           value={cmap}
           onChange={(e) => setCmap(e.target.value)}
           MenuProps={upwardMenuProps}
-          sx={{ minWidth: 80, bgcolor: colors.bgInput, color: colors.textPrimary, fontSize: 11, "& .MuiSelect-select": { py: 0.5 } }}
+          sx={{ minWidth: 75, bgcolor: colors.bgInput, color: colors.textPrimary, fontSize: 11, "& .MuiSelect-select": { py: 0.5 } }}
         >
           {COLORMAP_NAMES.map((name) => (
             <MenuItem key={name} value={name} sx={{ fontSize: 11 }}>

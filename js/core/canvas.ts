@@ -130,6 +130,53 @@ export function drawScaleBar(
 }
 
 /**
+ * Draw ROI on canvas overlay with different shapes.
+ * @param ctx - Canvas 2D context
+ * @param x - Center X in canvas pixels
+ * @param y - Center Y in canvas pixels
+ * @param shape - ROI shape: "circle", "square", or "rectangle"
+ * @param radius - Radius for circle, or half-size for square
+ * @param width - Width for rectangle
+ * @param height - Height for rectangle
+ * @param active - Whether ROI is being dragged
+ */
+export function drawROI(
+  ctx: CanvasRenderingContext2D,
+  x: number,
+  y: number,
+  shape: "circle" | "square" | "rectangle",
+  radius: number,
+  width: number,
+  height: number,
+  active: boolean = false
+): void {
+  const strokeColor = active ? colors.accentYellow : colors.accentGreen;
+  ctx.strokeStyle = strokeColor;
+  ctx.lineWidth = 2;
+
+  if (shape === "circle") {
+    ctx.beginPath();
+    ctx.arc(x, y, radius, 0, Math.PI * 2);
+    ctx.stroke();
+  } else if (shape === "square") {
+    const size = radius * 2;
+    ctx.strokeRect(x - radius, y - radius, size, size);
+  } else if (shape === "rectangle") {
+    const halfW = width / 2;
+    const halfH = height / 2;
+    ctx.strokeRect(x - halfW, y - halfH, width, height);
+  }
+
+  // Center crosshair
+  ctx.beginPath();
+  ctx.moveTo(x - 5, y);
+  ctx.lineTo(x + 5, y);
+  ctx.moveTo(x, y - 5);
+  ctx.lineTo(x, y + 5);
+  ctx.stroke();
+}
+
+/**
  * Draw ROI circle on canvas overlay.
  * @param ctx - Canvas 2D context
  * @param x - Center X in canvas pixels

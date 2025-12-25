@@ -21,6 +21,7 @@ export {
   calculateDisplayScale,
   calculateNiceScaleBar,
   drawCrosshair,
+  drawROI,
   drawROICircle,
   drawScaleBar,
   extractBytes,
