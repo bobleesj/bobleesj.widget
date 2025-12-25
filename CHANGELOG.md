@@ -2,6 +2,20 @@
 
 All notable changes to `bobleesj.widget` will be documented in this file.
 
+## Dec 25, 2025
+
+### Added
+- Show3D: ROI shapes (circle, square, rectangle) with adjustable width/height
+- Show3D: Reset button and zoom indicator (appears when zoomed)
+- Show3D: 1000-frame stress test in notebook
+- Show3D demo screenshot in README
+
+### Changed
+- Show3D: Default fps changed from 5.0 to 1.0 (1000ms per frame)
+- Show3D: Reorganized controls layout (playback row + display row)
+- Show3D: Crosshair only shows while dragging ROI
+- Show3D: Stats box limited to content width
+
 ## Dec 24, 2025
 
 ### Added

@@ -706,135 +706,111 @@ function Show3D() {
         )}
       </Stack>
 
-      {/* Controls */}
-      <Stack direction="row" spacing={1} sx={{ mt: 1, flexWrap: "wrap" }} alignItems="center">
-        {/* Playback buttons */}
-        <Stack direction="row" spacing={0.5} sx={{ bgcolor: colors.bgPanel, px: 1, py: 0.5, borderRadius: 0.5, border: "1px solid " + colors.border }}>
-          <IconButton
-            size="small"
-            onClick={() => { setReverse(true); setPlaying(true); }}
-            sx={{ color: reverse && playing ? colors.accent : colors.textMuted, fontSize: 12, p: 0.5 }}
-          >
-            ◀◀
-          </IconButton>
-          <IconButton
-            size="small"
-            onClick={() => setPlaying(!playing)}
-            sx={{ color: colors.accent, fontSize: 14, p: 0.5 }}
-          >
-            {playing ? "⏸" : "▶"}
-          </IconButton>
-          <IconButton
-            size="small"
-            onClick={() => { setReverse(false); setPlaying(true); }}
-            sx={{ color: !reverse && playing ? colors.accent : colors.textMuted, fontSize: 12, p: 0.5 }}
-          >
-            ▶▶
-          </IconButton>
-          <IconButton
-            size="small"
-            onClick={() => { setPlaying(false); setSliceIdx(loopStart); }}
-            sx={{ color: colors.textMuted, fontSize: 12, p: 0.5 }}
-          >
-            ⏹
-          </IconButton>
+      {/* Row 1: Timeline - Playback + ms + Loop + Slider */}
+      <Stack direction="row" spacing={1} sx={{ mt: 1 }} alignItems="center">
+        <Stack direction="row" spacing={0.25}>
+          <IconButton size="small" onClick={() => { setReverse(true); setPlaying(true); }} sx={{ color: reverse && playing ? colors.accent : colors.textMuted, fontSize: 11, p: 0.5 }}>◀◀</IconButton>
+          <IconButton size="small" onClick={() => setPlaying(!playing)} sx={{ color: colors.accent, fontSize: 13, p: 0.5 }}>{playing ? "⏸" : "▶"}</IconButton>
+          <IconButton size="small" onClick={() => { setReverse(false); setPlaying(true); }} sx={{ color: !reverse && playing ? colors.accent : colors.textMuted, fontSize: 11, p: 0.5 }}>▶▶</IconButton>
+          <IconButton size="small" onClick={() => { setPlaying(false); setSliceIdx(loopStart); }} sx={{ color: colors.textMuted, fontSize: 11, p: 0.5 }}>⏹</IconButton>
         </Stack>
-
-        {/* Frame slider */}
-        <Slider
-          value={sliceIdx}
-          min={0}
-          max={nSlices - 1}
-          onChange={(_, v) => setSliceIdx(v as number)}
-          sx={{ color: colors.accent, flex: 1, minWidth: 150 }}
-        />
-
-        {/* Frame counter */}
-        <Typography sx={{ fontSize: 11, fontFamily: "monospace", color: colors.textMuted, minWidth: 50, textAlign: "center" }}>
-          {sliceIdx + 1}/{nSlices}
-        </Typography>
+        <Stack direction="row" spacing={0.5} alignItems="center">
+          <Typography sx={{ fontSize: 11, color: colors.textMuted }}>ms</Typography>
+          <Slider value={Math.round(1000 / (fps || 1))} min={100} max={2000} step={100} onChange={(_, v) => setFps(1000 / (v as number))} sx={{ color: colors.accent, width: 50 }} />
+          <Typography sx={{ fontSize: 11, color: colors.textMuted, minWidth: 28 }}>{Math.round(1000 / (fps || 1))}</Typography>
+        </Stack>
+        <Stack direction="row" alignItems="center" spacing={0.5}>
+          <Switch size="small" checked={loop} onChange={() => setLoop(!loop)} sx={{ "& .MuiSwitch-thumb": { width: 12, height: 12 }, "& .MuiSwitch-track": { height: 14 } }} />
+          <Typography sx={{ fontSize: 11, color: colors.textMuted }}>Loop</Typography>
+        </Stack>
+        <Slider value={sliceIdx} min={0} max={nSlices - 1} onChange={(_, v) => setSliceIdx(v as number)} sx={{ color: colors.accent, flex: 1, minWidth: 100, maxWidth: 300 }} />
+        <Typography sx={{ fontSize: 11, fontFamily: "monospace", color: colors.textMuted, minWidth: 40, textAlign: "right" }}>{sliceIdx + 1}/{nSlices}</Typography>
       </Stack>
 
-      {/* Second row: Organized control groups */}
-      <Stack direction="row" spacing={1.5} sx={{ mt: 1, flexWrap: "wrap" }} alignItems="center">
-        {/* Playback group */}
-        <Stack direction="row" spacing={1} alignItems="center" sx={{ bgcolor: colors.bgPanel, px: 1, py: 0.5, borderRadius: 0.5, border: "1px solid " + colors.border }}>
-          <Typography sx={{ fontSize: 10, color: colors.textDim }}>ms</Typography>
-          <Slider
-            value={Math.round(1000 / (fps || 1))}
-            min={100}
-            max={2000}
-            step={100}
-            onChange={(_, v) => setFps(1000 / (v as number))}
-            sx={{ color: colors.accent, width: 50 }}
-          />
-          <Typography sx={{ fontSize: 10, color: colors.textMuted, minWidth: 30 }}>{Math.round(1000 / (fps || 1))}</Typography>
-          <Switch size="small" checked={loop} onChange={() => setLoop(!loop)} sx={{ '& .MuiSwitch-thumb': { width: 10, height: 10 }, '& .MuiSwitch-switchBase': { padding: '5px' } }} />
-          <Typography sx={{ fontSize: 10, color: colors.textMuted }}>Loop</Typography>
-        </Stack>
-
-        {/* Display group */}
-        <Stack direction="row" spacing={0.5} alignItems="center" sx={{ bgcolor: colors.bgPanel, px: 1, py: 0.5, borderRadius: 0.5, border: "1px solid " + colors.border }}>
-          <Switch size="small" checked={logScale} onChange={() => setLogScale(!logScale)} sx={{ '& .MuiSwitch-thumb': { width: 10, height: 10 }, '& .MuiSwitch-switchBase': { padding: '5px' } }} />
-          <Typography sx={{ fontSize: 10, color: colors.textMuted, mr: 0.5 }}>Log</Typography>
-          <Switch size="small" checked={autoContrast} onChange={() => setAutoContrast(!autoContrast)} sx={{ '& .MuiSwitch-thumb': { width: 10, height: 10 }, '& .MuiSwitch-switchBase': { padding: '5px' } }} />
-          <Typography sx={{ fontSize: 10, color: colors.textMuted, mr: 0.5 }}>Auto</Typography>
-          <Switch size="small" checked={showFft} onChange={() => setShowFft(!showFft)} sx={{ '& .MuiSwitch-thumb': { width: 10, height: 10 }, '& .MuiSwitch-switchBase': { padding: '5px' } }} />
-          <Typography sx={{ fontSize: 10, color: colors.textMuted }}>FFT</Typography>
-        </Stack>
-
-        {/* ROI group */}
-        <Stack direction="row" spacing={0.5} alignItems="center" sx={{ bgcolor: colors.bgPanel, px: 1, py: 0.5, borderRadius: 0.5, border: "1px solid " + colors.border }}>
-          <Switch size="small" checked={roiActive} onChange={() => { setRoiActive(!roiActive); if (!roiActive) { setRoiX(Math.floor(width / 2)); setRoiY(Math.floor(height / 2)); } }} sx={{ '& .MuiSwitch-thumb': { width: 10, height: 10 }, '& .MuiSwitch-switchBase': { padding: '5px' } }} />
-          <Typography sx={{ fontSize: 10, color: colors.textMuted }}>ROI</Typography>
-          {roiActive && (
-            <>
-              <Select
-                size="small"
-                value={roiShape || "circle"}
-                onChange={(e) => setRoiShape(e.target.value as RoiShape)}
-                MenuProps={upwardMenuProps}
-                sx={{ minWidth: 60, bgcolor: colors.bgInput, color: colors.textPrimary, fontSize: 10, ml: 0.5, "& .MuiSelect-select": { py: 0.25, px: 0.5 } }}
-              >
-                {ROI_SHAPES.map((shape) => (
-                  <MenuItem key={shape} value={shape} sx={{ fontSize: 10 }}>
-                    {shape === "circle" ? "○" : shape === "square" ? "□" : "▭"} {shape}
-                  </MenuItem>
-                ))}
-              </Select>
-              <Slider
-                value={roiShape === "rectangle" ? roiWidth : roiRadius}
-                min={5}
-                max={Math.min(width, height) / 2}
-                onChange={(_, v) => roiShape === "rectangle" ? setRoiWidth(v as number) : setRoiRadius(v as number)}
-                sx={{ color: colors.accent, width: 40, ml: 0.5 }}
-              />
-              <Typography sx={{ fontSize: 10, color: colors.textMuted, minWidth: 20 }}>
-                {roiShape === "rectangle" ? roiWidth : roiRadius}
-              </Typography>
-            </>
-          )}
-        </Stack>
-
-        {/* Colormap */}
+      {/* Row 2: Display toggles + Colormap + Reset */}
+      <Stack direction="row" spacing={2} sx={{ mt: 0.75 }} alignItems="center">
+        {[
+          { label: "Log", checked: logScale, onChange: () => setLogScale(!logScale) },
+          { label: "Auto", checked: autoContrast, onChange: () => setAutoContrast(!autoContrast) },
+          { label: "FFT", checked: showFft, onChange: () => setShowFft(!showFft) },
+          { label: "ROI", checked: roiActive, onChange: () => { setRoiActive(!roiActive); if (!roiActive) { setRoiX(Math.floor(width / 2)); setRoiY(Math.floor(height / 2)); } } },
+        ].map(({ label, checked, onChange }) => (
+          <Stack key={label} direction="row" alignItems="center" spacing={0.5}>
+            <Switch size="small" checked={checked} onChange={onChange} sx={{ "& .MuiSwitch-thumb": { width: 12, height: 12 }, "& .MuiSwitch-track": { height: 14 } }} />
+            <Typography sx={{ fontSize: 11, color: colors.textMuted }}>{label}</Typography>
+          </Stack>
+        ))}
         <Select
           size="small"
           value={cmap}
           onChange={(e) => setCmap(e.target.value)}
           MenuProps={upwardMenuProps}
-          sx={{ minWidth: 75, bgcolor: colors.bgInput, color: colors.textPrimary, fontSize: 11, "& .MuiSelect-select": { py: 0.5 } }}
+          sx={{ minWidth: 80, bgcolor: colors.bgInput, color: colors.textPrimary, fontSize: 11, "& .MuiSelect-select": { py: 0.5 } }}
         >
           {COLORMAP_NAMES.map((name) => (
-            <MenuItem key={name} value={name} sx={{ fontSize: 11 }}>
-              {name}
-            </MenuItem>
+            <MenuItem key={name} value={name} sx={{ fontSize: 11 }}>{name}</MenuItem>
           ))}
         </Select>
+        {zoom !== 1 && (
+          <>
+            <Box
+              onClick={handleDoubleClick}
+              sx={{ px: 1, py: 0.25, bgcolor: colors.bgPanel, border: "1px solid " + colors.border, borderRadius: 0.5, cursor: "pointer", "&:hover": { bgcolor: colors.bgInput } }}
+            >
+              <Typography sx={{ fontSize: 11, color: colors.textMuted }}>Reset</Typography>
+            </Box>
+            <Typography sx={{ fontSize: 11, color: colors.accent, fontWeight: "bold" }}>
+              {zoom.toFixed(1)}×
+            </Typography>
+          </>
+        )}
       </Stack>
+
+      {/* Row 3: ROI settings (only when active) */}
+      {roiActive && (
+        <Stack direction="row" spacing={2} sx={{ mt: 0.75 }} alignItems="center">
+          <Stack direction="row" spacing={0.5} alignItems="center">
+            <Typography sx={{ fontSize: 11, color: colors.textMuted }}>Shape</Typography>
+            <Select
+              size="small"
+              value={roiShape || "circle"}
+              onChange={(e) => setRoiShape(e.target.value as RoiShape)}
+              MenuProps={upwardMenuProps}
+              sx={{ minWidth: 90, bgcolor: colors.bgInput, color: colors.textPrimary, fontSize: 11, "& .MuiSelect-select": { py: 0.5 } }}
+            >
+              {ROI_SHAPES.map((shape) => (
+                <MenuItem key={shape} value={shape} sx={{ fontSize: 11 }}>
+                  {shape === "circle" ? "○" : shape === "square" ? "□" : "▭"} {shape}
+                </MenuItem>
+              ))}
+            </Select>
+          </Stack>
+          {roiShape === "rectangle" ? (
+            <>
+              <Stack direction="row" spacing={0.5} alignItems="center">
+                <Typography sx={{ fontSize: 11, color: colors.textMuted }}>W</Typography>
+                <Slider value={roiWidth} min={5} max={Math.min(width, height) / 2} onChange={(_, v) => setRoiWidth(v as number)} sx={{ color: colors.accent, width: 60 }} />
+                <Typography sx={{ fontSize: 11, color: colors.textMuted, minWidth: 24 }}>{roiWidth}</Typography>
+              </Stack>
+              <Stack direction="row" spacing={0.5} alignItems="center">
+                <Typography sx={{ fontSize: 11, color: colors.textMuted }}>H</Typography>
+                <Slider value={roiHeight} min={5} max={Math.min(width, height) / 2} onChange={(_, v) => setRoiHeight(v as number)} sx={{ color: colors.accent, width: 60 }} />
+                <Typography sx={{ fontSize: 11, color: colors.textMuted, minWidth: 24 }}>{roiHeight}</Typography>
+              </Stack>
+            </>
+          ) : (
+            <Stack direction="row" spacing={0.5} alignItems="center">
+              <Typography sx={{ fontSize: 11, color: colors.textMuted }}>Size</Typography>
+              <Slider value={roiRadius} min={5} max={Math.min(width, height) / 2} onChange={(_, v) => setRoiRadius(v as number)} sx={{ color: colors.accent, width: 70 }} />
+              <Typography sx={{ fontSize: 11, color: colors.textMuted, minWidth: 24 }}>{roiRadius}</Typography>
+            </Stack>
+          )}
+        </Stack>
+      )}
 
       {/* Stats bar */}
       {showStats && (
-        <Stack direction="row" spacing={2} sx={{ mt: 1, bgcolor: colors.bgPanel, px: 1.5, py: 0.75, borderRadius: 0.5, border: "1px solid " + colors.border }}>
+        <Stack direction="row" spacing={2} sx={{ mt: 1, bgcolor: colors.bgPanel, px: 1.5, py: 0.75, borderRadius: 0.5, border: "1px solid " + colors.border, width: "fit-content" }}>
           {[
             { label: "Mean", value: statsMean },
             { label: "Min", value: statsMin },

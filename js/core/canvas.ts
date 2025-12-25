@@ -167,13 +167,15 @@ export function drawROI(
     ctx.strokeRect(x - halfW, y - halfH, width, height);
   }
 
-  // Center crosshair
-  ctx.beginPath();
-  ctx.moveTo(x - 5, y);
-  ctx.lineTo(x + 5, y);
-  ctx.moveTo(x, y - 5);
-  ctx.lineTo(x, y + 5);
-  ctx.stroke();
+  // Center crosshair - only show while dragging
+  if (active) {
+    ctx.beginPath();
+    ctx.moveTo(x - 5, y);
+    ctx.lineTo(x + 5, y);
+    ctx.moveTo(x, y - 5);
+    ctx.lineTo(x, y + 5);
+    ctx.stroke();
+  }
 }
 
 /**
