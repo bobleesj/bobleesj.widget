@@ -43,6 +43,36 @@ jobs:
       - name: Run pytest
         run: pytest tests/ -v --tb=short
 
+  notebooks:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - name: Install Node dependencies
+        run: npm ci
+
+      - name: Build TypeScript
+        run: npm run build
+
+      - name: Install Python package
+        run: pip install -e .
+
+      - name: Install Jupyter
+        run: pip install jupyter nbconvert
+
+      - name: Run all notebooks
+        run: python scripts/run_notebooks.py
+
   lint:
     runs-on: ubuntu-latest
     steps:
