@@ -1,7 +1,17 @@
 /* show2d.css - Minimal CSS for Show2D */
 
+/* Ensure dark background for widget container */
 .show2d-root {
   font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  background-color: #1a1a1a;
+}
+
+/* Target Jupyter/VS Code output areas */
+.widget-output,
+.jp-OutputArea-output,
+.jp-RenderedHTMLCommon,
+.cell-output-ipywidget-background {
+  background-color: #1a1a1a !important;
 }
 
 .show2d-root canvas {

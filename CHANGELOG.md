@@ -19,6 +19,7 @@ All notable changes to `bobleesj.widget` will be documented in this file.
 
 ### Fixed
 - Zoom-to-cursor not zooming toward mouse position correctly
+- White background flash in Jupyter/VS Code output cells (now dark)
 - Histogram not rendering on initial load (added effect dependencies)
 - Stats box overflow beyond cell width (added `width: fit-content`)
 - Show4DSTEM import error when `bobleesj.detector` not installed (made optional)
