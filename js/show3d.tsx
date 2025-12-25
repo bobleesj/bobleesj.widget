@@ -86,6 +86,10 @@ function Show3D() {
   const [scaleBarThicknessPx] = useModelState<number>("scale_bar_thickness_px");
   const [scaleBarFontSizePx] = useModelState<number>("scale_bar_font_size_px");
 
+  // Customization (from Python)
+  const [panelSizePxTrait] = useModelState<number>("panel_size_px");
+  const [imageWidthPxTrait] = useModelState<number>("image_width_px");
+
   // Timestamps
   const [timestamps] = useModelState<number[]>("timestamps");
   const [timestampUnit] = useModelState<string>("timestamp_unit");
@@ -98,12 +102,11 @@ function Show3D() {
   const [roiRadius, setRoiRadius] = useModelState<number>("roi_radius");
   const [roiMean] = useModelState<number>("roi_mean");
 
-  // FFT
+  // FFT (shows both FFT and histogram together)
   const [showFft, setShowFft] = useModelState<boolean>("show_fft");
   const [fftBytes] = useModelState<DataView>("fft_bytes");
 
-  // Histogram
-  const [showHistogram, setShowHistogram] = useModelState<boolean>("show_histogram");
+  // Histogram data (displayed with FFT)
   const [histogramBins] = useModelState<number[]>("histogram_bins");
   const [histogramCounts] = useModelState<number[]>("histogram_counts");
 
@@ -130,6 +133,15 @@ function Show3D() {
   const [isResizingMain, setIsResizingMain] = React.useState(false);
   const [isResizingPanel, setIsResizingPanel] = React.useState(false);
   const [resizeStart, setResizeStart] = React.useState<{ x: number, y: number, size: number } | null>(null);
+
+  // Sync sizes from Python traits
+  React.useEffect(() => {
+    if (imageWidthPxTrait > 0) setMainCanvasSize(imageWidthPxTrait);
+  }, [imageWidthPxTrait]);
+
+  React.useEffect(() => {
+    if (panelSizePxTrait > 0) setPanelSize(panelSizePxTrait);
+  }, [panelSizePxTrait]);
 
   // WebGPU FFT
   const gpuFFTRef = React.useRef<WebGPUFFT | null>(null);
@@ -378,11 +390,10 @@ function Show3D() {
   }, [showFft, frameBytes, width, height, gpuReady, panelSize]);
 
   // -------------------------------------------------------------------------
-  // Render Histogram (same size as FFT)
+  // Render Histogram (shown together with FFT)
   // -------------------------------------------------------------------------
   React.useEffect(() => {
-    if (!showHistogram || !histCanvasRef.current) return;
-    if (!histogramBins || !histogramCounts || histogramCounts.length === 0) return;
+    if (!showFft || !histCanvasRef.current) return;
 
     const canvas = histCanvasRef.current;
     const ctx = canvas.getContext("2d");
@@ -390,19 +401,29 @@ function Show3D() {
 
     const w = panelSize;
     const h = panelSize;
+
+    // Always clear and fill background
     ctx.fillStyle = colors.bgPanel;
     ctx.fillRect(0, 0, w, h);
+
+    // Only draw bars if we have data
+    if (!histogramBins || !histogramCounts || histogramCounts.length === 0) return;
 
     const maxCount = Math.max(...histogramCounts);
     if (maxCount === 0) return;
 
-    const barWidth = w / histogramCounts.length;
+    // Add padding for centering
+    const padding = 8;
+    const drawWidth = w - 2 * padding;
+    const drawHeight = h - padding - 5;  // 5px bottom margin for axis
+    const barWidth = drawWidth / histogramCounts.length;
+
     ctx.fillStyle = colors.accent;
     for (let i = 0; i < histogramCounts.length; i++) {
-      const barHeight = (histogramCounts[i] / maxCount) * (h - 10);
-      ctx.fillRect(i * barWidth, h - barHeight, barWidth - 1, barHeight);
+      const barHeight = (histogramCounts[i] / maxCount) * drawHeight;
+      ctx.fillRect(padding + i * barWidth, h - padding - barHeight, barWidth - 1, barHeight);
     }
-  }, [showHistogram, histogramBins, histogramCounts, panelSize]);
+  }, [showFft, histogramBins, histogramCounts, panelSize]);
 
   // -------------------------------------------------------------------------
   // Mouse Handlers for Zoom/Pan
@@ -632,40 +653,46 @@ function Show3D() {
           </Stack>
         </Box>
 
-        {/* Side panels - resizable */}
-        {(showFft || showHistogram) && (
+        {/* Side panels - FFT and Histogram (shown together) */}
+        {showFft && (
           <Stack spacing={1}>
-            {showFft && (
-              <Box sx={{ position: "relative", bgcolor: colors.bgPanel, border: "1px solid " + colors.border, borderRadius: 0.5, p: 0.75 }}>
-                <Typography sx={{ fontSize: 10, color: colors.textMuted, textTransform: "uppercase", mb: 0.5 }}>
-                  FFT
-                </Typography>
-                <canvas
-                  ref={fftCanvasRef}
-                  width={panelSize}
-                  height={panelSize}
-                  style={{ width: panelSize, height: panelSize, imageRendering: "pixelated" }}
-                />
-                {/* Resize handle */}
-                <Box
-                  onMouseDown={handlePanelResizeStart}
-                  sx={{
-                    position: "absolute", bottom: 2, right: 2, width: 12, height: 12,
-                    cursor: "nwse-resize", opacity: 0.5,
-                    background: "linear-gradient(135deg, transparent 50%, " + colors.textMuted + " 50%)",
-                    "&:hover": { opacity: 1 }
-                  }}
-                />
-              </Box>
-            )}
-            {showHistogram && (
-              <Box sx={{ position: "relative", bgcolor: colors.bgPanel, border: "1px solid " + colors.border, borderRadius: 0.5, p: 0.75 }}>
-                <Typography sx={{ fontSize: 10, color: colors.textMuted, textTransform: "uppercase", mb: 0.5 }}>
-                  Histogram
-                </Typography>
-                <canvas ref={histCanvasRef} width={panelSize} height={panelSize} style={{ width: panelSize, height: panelSize }} />
-              </Box>
-            )}
+            <Box sx={{ position: "relative", bgcolor: colors.bgPanel, border: "1px solid " + colors.border, borderRadius: 0.5, p: 0.75 }}>
+              <Typography sx={{ fontSize: 10, color: colors.textMuted, textTransform: "uppercase", mb: 0.5 }}>
+                FFT
+              </Typography>
+              <canvas
+                ref={fftCanvasRef}
+                width={panelSize}
+                height={panelSize}
+                style={{ width: panelSize, height: panelSize, imageRendering: "pixelated" }}
+              />
+              {/* Resize handle */}
+              <Box
+                onMouseDown={handlePanelResizeStart}
+                sx={{
+                  position: "absolute", bottom: 2, right: 2, width: 12, height: 12,
+                  cursor: "nwse-resize", opacity: 0.5,
+                  background: "linear-gradient(135deg, transparent 50%, " + colors.textMuted + " 50%)",
+                  "&:hover": { opacity: 1 }
+                }}
+              />
+            </Box>
+            <Box sx={{ position: "relative", bgcolor: colors.bgPanel, border: "1px solid " + colors.border, borderRadius: 0.5, p: 0.75 }}>
+              <Typography sx={{ fontSize: 10, color: colors.textMuted, textTransform: "uppercase", mb: 0.5 }}>
+                Histogram
+              </Typography>
+              <canvas ref={histCanvasRef} width={panelSize} height={panelSize} style={{ width: panelSize, height: panelSize }} />
+              {/* Resize handle */}
+              <Box
+                onMouseDown={handlePanelResizeStart}
+                sx={{
+                  position: "absolute", bottom: 2, right: 2, width: 12, height: 12,
+                  cursor: "nwse-resize", opacity: 0.5,
+                  background: "linear-gradient(135deg, transparent 50%, " + colors.textMuted + " 50%)",
+                  "&:hover": { opacity: 1 }
+                }}
+              />
+            </Box>
           </Stack>
         )}
       </Stack>
@@ -755,7 +782,6 @@ function Show3D() {
           { label: "Log", checked: logScale, onChange: () => setLogScale(!logScale) },
           { label: "Auto", checked: autoContrast, onChange: () => setAutoContrast(!autoContrast) },
           { label: "FFT", checked: showFft, onChange: () => setShowFft(!showFft) },
-          { label: "Hist", checked: showHistogram, onChange: () => setShowHistogram(!showHistogram) },
           { label: "ROI", checked: roiActive, onChange: () => { setRoiActive(!roiActive); if (!roiActive) { setRoiX(Math.floor(width / 2)); setRoiY(Math.floor(height / 2)); } } },
           { label: "Loop", checked: loop, onChange: () => setLoop(!loop) },
         ].map(({ label, checked, onChange }) => (

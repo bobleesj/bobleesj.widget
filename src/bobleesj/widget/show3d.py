@@ -6,12 +6,14 @@ Includes playback controls, statistics, ROI selection, FFT, and more.
 """
 
 import pathlib
+from typing import Optional, Union, List
 
 import anywidget
 import numpy as np
 import traitlets
 
 from bobleesj.widget.array_utils import to_numpy
+from bobleesj.widget.show2d import Colormap
 
 
 class Show3D(anywidget.AnyWidget):
@@ -31,8 +33,9 @@ class Show3D(anywidget.AnyWidget):
         If None, uses slice indices.
     title : str, optional
         Title to display above the image.
-    cmap : str, default "magma"
-        Colormap name ("magma", "viridis", "gray", "inferno", "plasma").
+    cmap : str or Colormap, default Colormap.MAGMA
+        Colormap name. Use Colormap enum (Colormap.MAGMA, Colormap.VIRIDIS, etc.)
+        or string ("magma", "viridis", "gray", "inferno", "plasma").
     vmin : float, optional
         Minimum value for colormap. If None, uses data min.
     vmax : float, optional
@@ -139,15 +142,16 @@ class Show3D(anywidget.AnyWidget):
     roi_mean = traitlets.Float(0.0).tag(sync=True)
 
     # =========================================================================
-    # FFT View
+    # Sizing & Customization
     # =========================================================================
-    show_fft = traitlets.Bool(False).tag(sync=True)
-    fft_bytes = traitlets.Bytes(b"").tag(sync=True)
+    panel_size_px = traitlets.Int(150).tag(sync=True)  # Size for FFT and Histogram panels
+    image_width_px = traitlets.Int(0).tag(sync=True)   # If 0, use frontend defaults
 
     # =========================================================================
-    # Histogram
+    # Analysis Panels (FFT + Histogram shown together)
     # =========================================================================
-    show_histogram = traitlets.Bool(False).tag(sync=True)
+    show_fft = traitlets.Bool(False).tag(sync=True)  # Show both FFT and histogram
+    fft_bytes = traitlets.Bytes(b"").tag(sync=True)
     histogram_bins = traitlets.List(traitlets.Float()).tag(sync=True)
     histogram_counts = traitlets.List(traitlets.Int()).tag(sync=True)
 
@@ -168,23 +172,27 @@ class Show3D(anywidget.AnyWidget):
     def __init__(
         self,
         data,
-        labels=None,
-        title="",
-        cmap="magma",
-        vmin=None,
-        vmax=None,
-        pixel_size=0.0,
-        scale_bar_visible=True,
-        scale_bar_length_px=50,
-        scale_bar_thickness_px=4,
-        scale_bar_font_size_px=16,
-        log_scale=False,
-        auto_contrast=False,
-        percentile_low=1.0,
-        percentile_high=99.0,
-        fps=5.0,
-        timestamps=None,
-        timestamp_unit="s",
+        labels: Optional[List[str]] = None,
+        title: str = "",
+        cmap: Union[str, Colormap] = Colormap.MAGMA,
+        vmin: Optional[float] = None,
+        vmax: Optional[float] = None,
+        pixel_size: float = 0.0,
+        scale_bar_visible: bool = True,
+        scale_bar_length_px: int = 50,
+        scale_bar_thickness_px: int = 4,
+        scale_bar_font_size_px: int = 16,
+        log_scale: bool = False,
+        auto_contrast: bool = False,
+        percentile_low: float = 1.0,
+        percentile_high: float = 99.0,
+        fps: float = 5.0,
+        timestamps: Optional[List[float]] = None,
+        timestamp_unit: str = "s",
+        show_fft: bool = False,
+        show_stats: bool = True,
+        panel_size_px: int = 150,
+        image_width_px: int = 0,
         **kwargs,
     ):
         super().__init__(**kwargs)
@@ -218,7 +226,7 @@ class Show3D(anywidget.AnyWidget):
 
         # Title and colormap
         self.title = title
-        self.cmap = cmap
+        self.cmap = str(cmap)  # Convert Colormap enum to string
 
         # Display options
         self.pixel_size = pixel_size
@@ -238,6 +246,10 @@ class Show3D(anywidget.AnyWidget):
         else:
             self.timestamps = []
         self.timestamp_unit = timestamp_unit
+        self.show_fft = show_fft
+        self.show_stats = show_stats
+        self.panel_size_px = panel_size_px
+        self.image_width_px = image_width_px
 
         # Compute reference for drift (first frame CoM)
         self._ref_com = self._compute_com(self._data[0])
@@ -251,7 +263,6 @@ class Show3D(anywidget.AnyWidget):
         self.observe(self._on_compare_change, names=["compare_idx", "compare_mode"])
         self.observe(self._on_roi_change, names=["roi_x", "roi_y", "roi_radius", "roi_active"])
         self.observe(self._on_fft_change, names=["show_fft"])
-        self.observe(self._on_histogram_change, names=["show_histogram"])
 
         # Initial update
         self._update_all()
@@ -317,12 +328,9 @@ class Show3D(anywidget.AnyWidget):
         normalized = self._normalize_frame(frame)
         self.frame_bytes = normalized.tobytes()
 
-        # FFT if visible
+        # FFT and histogram if visible (shown together)
         if self.show_fft:
             self._update_fft(frame)
-
-        # Histogram if visible
-        if self.show_histogram:
             self._update_histogram(frame)
 
     def _update_roi_mean(self, frame: np.ndarray):
@@ -374,14 +382,11 @@ class Show3D(anywidget.AnyWidget):
             self._update_roi_mean(self._data[self.slice_idx])
 
     def _on_fft_change(self, change=None):
-        """Handle FFT visibility change."""
+        """Handle FFT visibility change (shows both FFT and histogram)."""
         if self.show_fft:
-            self._update_fft(self._data[self.slice_idx])
-
-    def _on_histogram_change(self, change=None):
-        """Handle histogram visibility change."""
-        if self.show_histogram:
-            self._update_histogram(self._data[self.slice_idx])
+            frame = self._data[self.slice_idx]
+            self._update_fft(frame)
+            self._update_histogram(frame)
 
     # =========================================================================
     # Public Methods
