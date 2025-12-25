@@ -16,6 +16,38 @@ import traitlets
 from bobleesj.widget.array_utils import to_numpy
 
 
+def _resize_image(img: np.ndarray, target_h: int, target_w: int) -> np.ndarray:
+    """Resize image using bilinear interpolation (pure numpy, no scipy)."""
+    h, w = img.shape
+    
+    # If same size, return as-is
+    if h == target_h and w == target_w:
+        return img
+    
+    # Create coordinate grids for target size
+    y_new = np.linspace(0, h - 1, target_h)
+    x_new = np.linspace(0, w - 1, target_w)
+    x_grid, y_grid = np.meshgrid(x_new, y_new)
+    
+    # Get integer and fractional parts for bilinear interpolation
+    y0 = np.floor(y_grid).astype(int)
+    x0 = np.floor(x_grid).astype(int)
+    y1 = np.minimum(y0 + 1, h - 1)
+    x1 = np.minimum(x0 + 1, w - 1)
+    
+    fy = y_grid - y0
+    fx = x_grid - x0
+    
+    # Vectorized bilinear interpolation
+    result = (
+        img[y0, x0] * (1 - fy) * (1 - fx) +
+        img[y0, x1] * (1 - fy) * fx +
+        img[y1, x0] * fy * (1 - fx) +
+        img[y1, x1] * fy * fx
+    )
+    return result.astype(img.dtype)
+
+
 class Colormap(StrEnum):
     INFERNO = "inferno"
     VIRIDIS = "viridis"
@@ -155,7 +187,17 @@ class Show2D(anywidget.AnyWidget):
 
         # Convert input to NumPy (handles NumPy, CuPy, PyTorch)
         if isinstance(data, list):
-            data = np.stack([to_numpy(d) for d in data])
+            images = [to_numpy(d) for d in data]
+            
+            # Check if all images have the same shape
+            shapes = [img.shape for img in images]
+            if len(set(shapes)) > 1:
+                # Different sizes - resize all to the largest
+                max_h = max(s[0] for s in shapes)
+                max_w = max(s[1] for s in shapes)
+                images = [_resize_image(img, max_h, max_w) for img in images]
+            
+            data = np.stack(images)
         else:
             data = to_numpy(data)
 

@@ -85,6 +85,22 @@ class TestShow2D:
         assert widget.height == 64
         assert widget.width == 64
     
+    def test_different_sizes(self):
+        """Test Show2D with list of different-sized images (auto-resize)."""
+        images = [
+            np.random.rand(512, 512),
+            np.random.rand(256, 256),
+            np.random.rand(128, 128),
+            np.random.rand(64, 64),
+        ]
+        widget = Show2D(images)
+        
+        # All resized to largest (512x512)
+        assert widget.n_images == 4
+        assert widget.height == 512
+        assert widget.width == 512
+        assert len(widget.frame_bytes) == 4 * 512 * 512
+    
     def test_labels(self):
         """Test Show2D with labels."""
         data = np.random.rand(3, 64, 64).astype(np.float32)
