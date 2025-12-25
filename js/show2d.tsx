@@ -439,20 +439,34 @@ function Show2D() {
     const canvas = canvasRefs.current[idx];
     if (!canvas) return;
     const rect = canvas.getBoundingClientRect();
-    // Mouse position relative to canvas center
+    
+    // Get current zoom state
+    const zs = getZoomState(idx);
+    
+    // Mouse position relative to canvas (in canvas pixel coordinates)
+    const mouseCanvasX = (e.clientX - rect.left) * (canvas.width / rect.width);
+    const mouseCanvasY = (e.clientY - rect.top) * (canvas.height / rect.height);
+    
+    // Canvas center
     const cx = canvas.width / 2;
     const cy = canvas.height / 2;
-    const mouseX = (e.clientX - rect.left) * (canvas.width / rect.width) - cx;
-    const mouseY = (e.clientY - rect.top) * (canvas.height / rect.height) - cy;
+    
+    // Mouse position relative to the current view (accounting for pan and zoom)
+    // The transformation is: translate(cx + panX, cy + panY) -> scale(zoom) -> translate(-cx, -cy)
+    // So a point on screen at (screenX, screenY) maps to image space as:
+    // imageX = (screenX - cx - panX) / zoom + cx
+    const mouseImageX = (mouseCanvasX - cx - zs.panX) / zs.zoom + cx;
+    const mouseImageY = (mouseCanvasY - cy - zs.panY) / zs.zoom + cy;
 
-    const zs = getZoomState(idx);
     const zoomFactor = e.deltaY > 0 ? 0.9 : 1.1;
     const newZoom = Math.max(MIN_ZOOM, Math.min(MAX_ZOOM, zs.zoom * zoomFactor));
     
-    // Adjust pan to zoom toward mouse position (relative to center)
-    const zoomRatio = newZoom / zs.zoom;
-    const newPanX = zs.panX - mouseX * (zoomRatio - 1);
-    const newPanY = zs.panY - mouseY * (zoomRatio - 1);
+    // Calculate new pan to keep the mouse position fixed on the same image point
+    // After zoom: screenX = (imageX - cx) * newZoom + cx + newPanX
+    // We want screenX to stay at mouseCanvasX, so:
+    // newPanX = mouseCanvasX - (imageX - cx) * newZoom - cx
+    const newPanX = mouseCanvasX - (mouseImageX - cx) * newZoom - cx;
+    const newPanY = mouseCanvasY - (mouseImageY - cy) * newZoom - cy;
 
     setZoomState(idx, { zoom: newZoom, panX: newPanX, panY: newPanY });
   };

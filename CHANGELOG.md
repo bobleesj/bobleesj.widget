@@ -18,6 +18,7 @@ All notable changes to `bobleesj.widget` will be documented in this file.
 - Simplified API: merged `fft_panel_size_px` and `histogram_panel_size_px` into single `panel_size_px`
 
 ### Fixed
+- Zoom-to-cursor not zooming toward mouse position correctly
 - Histogram not rendering on initial load (added effect dependencies)
 - Stats box overflow beyond cell width (added `width: fit-content`)
 - Show4DSTEM import error when `bobleesj.detector` not installed (made optional)
