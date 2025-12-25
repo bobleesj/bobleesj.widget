@@ -109,7 +109,7 @@ class Show2D(anywidget.AnyWidget):
     n_images = traitlets.Int(1).tag(sync=True)
     height = traitlets.Int(1).tag(sync=True)
     width = traitlets.Int(1).tag(sync=True)
-    frame_bytes = traitlets.Bytes(b"").tag(sync=True)  # All images concatenated
+    frame_bytes = traitlets.Bytes(b"").tag(sync=True)  # Raw float32 data (JS handles normalization)
     labels = traitlets.List(traitlets.Unicode()).tag(sync=True)
     title = traitlets.Unicode("").tag(sync=True)
     cmap = traitlets.Unicode("inferno").tag(sync=True)
@@ -236,7 +236,7 @@ class Show2D(anywidget.AnyWidget):
         # Compute initial stats
         self._compute_all_stats()
 
-        # Initial frame bytes
+        # Send raw float32 data to JS (normalization happens in JS for speed)
         self._update_all_frames()
 
         # Initial FFT/histogram for selected image
@@ -244,8 +244,8 @@ class Show2D(anywidget.AnyWidget):
             self._compute_fft()
             self._compute_histogram()
 
-        # Observe changes
-        self.observe(self._on_options_change, names=["log_scale", "auto_contrast", "percentile_low", "percentile_high"])
+        # Observe changes - only recompute histogram when selection changes
+        # Log/Auto are handled entirely in JS now for instant response
         self.observe(self._on_selected_change, names=["selected_idx"])
         self.observe(self._on_fft_change, names=["show_fft"])
 
@@ -266,32 +266,10 @@ class Show2D(anywidget.AnyWidget):
         self.stats_max = maxs
         self.stats_std = stds
 
-    def _normalize_image(self, img: np.ndarray) -> np.ndarray:
-        """Normalize image to uint8 for display."""
-        if self.log_scale:
-            img = np.log1p(np.maximum(img, 0))
-
-        if self.auto_contrast:
-            vmin = np.percentile(img, self.percentile_low)
-            vmax = np.percentile(img, self.percentile_high)
-        else:
-            vmin = np.min(img)
-            vmax = np.max(img)
-
-        if vmax - vmin < 1e-10:
-            return np.zeros_like(img, dtype=np.uint8)
-
-        normalized = (img - vmin) / (vmax - vmin)
-        normalized = np.clip(normalized, 0, 1)
-        return (normalized * 255).astype(np.uint8)
-
     def _update_all_frames(self):
-        """Update frame bytes for all images."""
-        frames = []
-        for i in range(self.n_images):
-            frame = self._normalize_image(self._data[i])
-            frames.append(frame.tobytes())
-        self.frame_bytes = b"".join(frames)
+        """Send raw float32 data to JS (normalization happens in JS for speed)."""
+        # Concatenate all images as raw float32 bytes
+        self.frame_bytes = self._data.astype(np.float32).tobytes()
 
     def _compute_fft(self):
         """Compute FFT of selected image."""
@@ -322,10 +300,6 @@ class Show2D(anywidget.AnyWidget):
         counts, bins = np.histogram(img.ravel(), bins=50)
         self.histogram_bins = [float(b) for b in bins[:-1]]
         self.histogram_counts = [int(c) for c in counts]
-
-    def _on_options_change(self, change):
-        """Recompute frames when display options change."""
-        self._update_all_frames()
 
     def _on_selected_change(self, change):
         """Update FFT/histogram when selection changes."""

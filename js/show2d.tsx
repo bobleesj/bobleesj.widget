@@ -152,10 +152,15 @@ function Show2D() {
   const displayScale = canvasSize / Math.max(width, height);
   const canvasW = Math.round(width * displayScale);
   const canvasH = Math.round(height * displayScale);
-  const bytesPerImage = width * height;
+  const floatsPerImage = width * height;
 
-  // Extract all image bytes
-  const allBytes = React.useMemo(() => extractBytes(frameBytes), [frameBytes]);
+  // Extract raw float32 bytes and parse into Float32Arrays
+  const allFloats = React.useMemo(() => {
+    const bytes = extractBytes(frameBytes);
+    if (!bytes || bytes.length === 0) return null;
+    // Create Float32Array from the raw bytes
+    return new Float32Array(bytes.buffer, bytes.byteOffset, bytes.byteLength / 4);
+  }, [frameBytes]);
 
   // Initialize WebGPU FFT on mount
   React.useEffect(() => {
@@ -171,17 +176,16 @@ function Show2D() {
 
   // Parse frame data and store raw floats for FFT
   React.useEffect(() => {
-    if (!allBytes || allBytes.length === 0) return;
+    if (!allFloats || allFloats.length === 0) return;
     const dataArrays: Float32Array[] = [];
     for (let i = 0; i < nImages; i++) {
-      const start = i * bytesPerImage;
-      const imageData = allBytes.subarray(start, start + bytesPerImage);
-      // Native conversion is much faster than manual loop
+      const start = i * floatsPerImage;
+      const imageData = allFloats.subarray(start, start + floatsPerImage);
       dataArrays.push(new Float32Array(imageData));
     }
     rawDataRef.current = dataArrays;
-    setDataReady(true); // Trigger re-render now that data is ready
-  }, [allBytes, nImages, bytesPerImage]);
+    setDataReady(true);
+  }, [allFloats, nImages, floatsPerImage]);
 
   // Prevent page scroll when scrolling on the active image canvas or FFT
   React.useEffect(() => {
@@ -216,10 +220,10 @@ function Show2D() {
   }, [nImages, canvasReady, selectedIdx, isGallery, linkedZoom, dataReady]);
 
   // -------------------------------------------------------------------------
-  // Render Images
+  // Render Images (JS-side normalization for instant Log/Auto toggle)
   // -------------------------------------------------------------------------
   React.useEffect(() => {
-    if (!allBytes || allBytes.length === 0) return;
+    if (!dataReady || rawDataRef.current.length === 0) return;
 
     const lut = COLORMAPS[cmap] || COLORMAPS.inferno;
 
@@ -229,8 +233,40 @@ function Show2D() {
       const ctx = canvas.getContext("2d");
       if (!ctx) continue;
 
-      const start = i * bytesPerImage;
-      const imageData = allBytes.slice(start, start + bytesPerImage);
+      // Get raw float32 data for this image
+      const rawData = rawDataRef.current[i];
+      if (!rawData) continue;
+
+      // Apply log scale if enabled
+      let processed: Float32Array;
+      if (logScale) {
+        processed = new Float32Array(rawData.length);
+        for (let j = 0; j < rawData.length; j++) {
+          processed[j] = Math.log1p(Math.max(0, rawData[j]));
+        }
+      } else {
+        processed = rawData;
+      }
+
+      // Compute min/max for normalization
+      let vmin = processed[0];
+      let vmax = processed[0];
+      if (autoContrast) {
+        // Sort for percentile calculation (2nd and 98th percentile)
+        const sorted = Float32Array.from(processed).sort((a, b) => a - b);
+        const p2Idx = Math.floor(sorted.length * 0.02);
+        const p98Idx = Math.floor(sorted.length * 0.98);
+        vmin = sorted[p2Idx];
+        vmax = sorted[p98Idx];
+      } else {
+        for (let j = 1; j < processed.length; j++) {
+          if (processed[j] < vmin) vmin = processed[j];
+          if (processed[j] > vmax) vmax = processed[j];
+        }
+      }
+
+      // Normalize to 0-255 and apply colormap
+      const range = vmax - vmin || 1;
 
       // Create offscreen canvas at native resolution
       const offscreen = document.createElement("canvas");
@@ -242,10 +278,10 @@ function Show2D() {
       const imgData = offCtx.createImageData(width, height);
       const rgba = imgData.data;
 
-      for (let j = 0; j < imageData.length; j++) {
-        const v = imageData[j];
+      for (let j = 0; j < processed.length; j++) {
+        const normalized = Math.max(0, Math.min(255, Math.round(((processed[j] - vmin) / range) * 255)));
         const k = j * 4;
-        const lutIdx = v * 3;
+        const lutIdx = normalized * 3;
         rgba[k] = lut[lutIdx];
         rgba[k + 1] = lut[lutIdx + 1];
         rgba[k + 2] = lut[lutIdx + 2];
@@ -276,7 +312,7 @@ function Show2D() {
         ctx.drawImage(offscreen, 0, 0, width, height, 0, 0, canvasW, canvasH);
       }
     }
-  }, [allBytes, nImages, width, height, cmap, bytesPerImage, displayScale, isGallery, canvasW, canvasH, canvasReady, linkedZoom, linkedZoomState, zoomStates]);
+  }, [dataReady, nImages, width, height, cmap, displayScale, isGallery, canvasW, canvasH, canvasReady, linkedZoom, linkedZoomState, zoomStates, logScale, autoContrast]);
 
   // -------------------------------------------------------------------------
   // Render Overlays (scale bar, selection, zoom indicator)
@@ -391,7 +427,7 @@ function Show2D() {
     };
 
     computeFFT();
-  }, [showFft, selectedIdx, width, height, gpuReady, allBytes, panelSize, fftZoom, fftPanX, fftPanY, dataReady]);
+  }, [showFft, selectedIdx, width, height, gpuReady, panelSize, fftZoom, fftPanX, fftPanY, dataReady]);
 
   // -------------------------------------------------------------------------
   // Render Histogram

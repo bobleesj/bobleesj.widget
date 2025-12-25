@@ -65,7 +65,8 @@ class TestShow2D:
         assert widget.n_images == 1
         assert widget.height == size
         assert widget.width == size
-        assert len(widget.frame_bytes) == size * size
+        # frame_bytes contains raw float32 data (4 bytes per pixel)
+        assert len(widget.frame_bytes) == size * size * 4
     
     def test_3d_input(self):
         """Test Show2D with 3D array (gallery mode)."""
@@ -99,7 +100,8 @@ class TestShow2D:
         assert widget.n_images == 4
         assert widget.height == 512
         assert widget.width == 512
-        assert len(widget.frame_bytes) == 4 * 512 * 512
+        # frame_bytes contains raw float32 data (4 bytes per pixel)
+        assert len(widget.frame_bytes) == 4 * 512 * 512 * 4
     
     def test_labels(self):
         """Test Show2D with labels."""
